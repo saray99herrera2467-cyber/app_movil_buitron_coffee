@@ -1,19 +1,44 @@
-class Resena {
-  final String id;
-  final String productoId;
-  final String usuarioNombre;
+class ResenaModel {
+  final int? id;
+  final int productoId;
+  final int usuarioId;
   final int calificacion;
-  final String comentario;
-  final DateTime fecha;
-  String? respuestaAdmin;
+  final String? comentario;
+  final DateTime? fecha;
+  final Map<String, dynamic>? usuario;
 
-  Resena({
-    required this.id,
+  ResenaModel({
+    this.id,
     required this.productoId,
-    required this.usuarioNombre,
+    required this.usuarioId,
     required this.calificacion,
-    required this.comentario,
-    required this.fecha,
-    this.respuestaAdmin,
+    this.comentario,
+    this.fecha,
+    this.usuario,
   });
+
+  factory ResenaModel.fromJson(Map<String, dynamic> json) {
+    return ResenaModel(
+      id: json['id'] as int?,
+      productoId: json['producto_id'] as int,
+      usuarioId: json['usuario_id'] as int,
+      calificacion: json['calificacion'] as int,
+      comentario: json['comentario'] as String?,
+      fecha: json['fecha'] != null
+          ? DateTime.tryParse(json['fecha'].toString())
+          : null,
+      usuario: json['usuario'] != null
+          ? Map<String, dynamic>.from(json['usuario'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'producto_id': productoId,
+      'usuario_id': usuarioId,
+      'calificacion': calificacion,
+      'comentario': comentario,
+    };
+  }
 }

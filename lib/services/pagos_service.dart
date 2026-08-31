@@ -1,0 +1,84 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class PedidoService {
+  static final SupabaseClient _supabase = Supabase.instance.client;
+
+  // 📌 Obtener ID del usuario actual
+  static Future<int?> _obtenerIdUsuarioActual() async {
+    final correo = _supabase.auth.currentUser?.email;
+    if (correo == null) return null;
+
+    try {
+      final respuesta = await _supabase
+          .from('usuario')
+          .select('id, nombre_usuario, apellido, telefono, direccion')
+          .eq('correo', correo)
+          .maybeSingle();
+      return respuesta?['id'] as int?;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 📌 Obtener datos completos del usuario
+  static Future<Map<String, dynamic>?> obtenerDatosUsuario() async {
+    final correo = _supabase.auth.currentUser?.email;
+    if (correo == null) return null;
+
+    try {
+      return await _supabase
+          .from('usuario')
+          .select()
+          .eq('correo', correo)
+          .maybeSingle();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ✅ CREAR PEDIDO + DETALLES (guarda en tabla pedido y detalle_pedido)
+  static Future<Map<String, dynamic>?> crearPedido({
+    required String correo,
+    required String nombreCompleto,
+    required String telefono,
+    required String direccion,
+    required String metodoPago,
+    required String? numeroPago,
+    required double subtotal,
+    required double total,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final idUsuario = await _obtenerIdUsuarioActual();
+    if (idUsuario == null) return null;
+
+    try {
+      // 1️⃣ CREAR EL PEDIDO EN LA TABLA "pedido"
+      final pedidoRespuesta = await _supabase.from('pedido').insert({
+        'id_usuario': idUsuario,
+        'fecha': DateTime.now().toIso8601String(),
+        'subtotal': subtotal,
+        'total': total,
+        'estado': 'PENDIENTE',
+        'fecha_limite': DateTime.now().add(const Duration(days: 3)).toIso8601String(),
+      }).select().single();
+
+      final idPedido = pedidoRespuesta['id'];
+
+      // 2️⃣ INSERTAR DETALLES EN "detalle_pedido"
+      for (var item in items) {
+        await _supabase.from('detalle_pedido').insert({
+          'id_pedido': idPedido,
+          'id_producto': item['id_producto'],
+          'cantidad': item['cantidad'],
+          'precio_unitario': item['precio_unitario'],
+        });
+      }
+
+      // ✅ Devolvemos el pedido creado
+      return pedidoRespuesta;
+    } catch (e) {
+      print('Error al crear pedido: $e');
+      return null;
+    }
+  }
+}
