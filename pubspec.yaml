@@ -20,6 +20,7 @@ dependencies:
 
   # Librería para manejar el estado de la aplicación
   provider: ^6.1.5+1
+  supabase_flutter: ^2.17.2
 
 dev_dependencies:
   flutter_test:
