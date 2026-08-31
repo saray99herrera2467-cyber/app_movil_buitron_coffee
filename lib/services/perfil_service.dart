@@ -1,0 +1,79 @@
+// lib/services/perfil_service.dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class PerfilService {
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  //  GET CARGAR DATOS DEL USUARIO DESDE LA TABLA "usuario"
+  Future<Map<String, dynamic>?> cargarDatosUsuario(String correo) async {
+    try {
+      final respuesta = await _supabase
+          .from('usuario')
+          .select()
+          .eq('correo', correo)
+          .maybeSingle();
+      return respuesta;
+    } catch (e) {
+      throw Exception('Error al cargar datos: $e');
+    }
+  }
+
+  //PATCH ACTUALIZAR DATOS EN LA TABLA "usuario"
+  Future<void> actualizarEnTabla({
+    required String correo,
+    required String nombre,
+    required String telefono,
+    required String direccion,
+  }) async {
+    try {
+      await _supabase.from('usuario').update({
+        'nombre_usuario': nombre,
+        'telefono': telefono,
+        'direccion': direccion,
+      }).eq('correo', correo);
+    } catch (e) {
+      throw Exception('Error al guardar en tabla: $e');
+    }
+  }
+
+  // PUT ACTUALIZAR DATOS EN AUTENTICACIÓN DE SUPABASE
+  Future<void> actualizarEnAuth({
+    required String nombre,
+    required String telefono,
+    required String direccion,
+  }) async {
+    try {
+      await _supabase.auth.updateUser(
+        UserAttributes(
+          data: {
+            'nombre_usuario': nombre,
+            'telefono': telefono,
+            'direccion': direccion,
+          },
+        ),
+      );
+    } catch (e) {
+      throw Exception('Error al actualizar autenticación: $e');
+    }
+  }
+
+  //  FUNCIÓN UNIFICADA: ACTUALIZA TODO JUNTO
+  Future<void> guardarPerfilCompleto({
+    required String correo,
+    required String nombre,
+    required String telefono,
+    required String direccion,
+  }) async {
+    await actualizarEnAuth(
+      nombre: nombre,
+      telefono: telefono,
+      direccion: direccion,
+    );
+    await actualizarEnTabla(
+      correo: correo,
+      nombre: nombre,
+      telefono: telefono,
+      direccion: direccion,
+    );
+  }
+}
