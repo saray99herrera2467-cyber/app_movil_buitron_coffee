@@ -1,0 +1,31 @@
+name: app_buitron_coffee
+description: "A new Flutter project."
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Librerías para mostrar mapas
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+
+  # Librería para manejar el estado de la aplicación
+  provider: ^6.1.5+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

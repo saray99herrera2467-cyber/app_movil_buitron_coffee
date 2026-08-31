@@ -5,57 +5,98 @@ import '../providers/carrito_provider.dart';
 class CarritoScreen extends StatelessWidget {
   const CarritoScreen({super.key});
 
-  Widget _buildImagenProducto(String? ruta) {
-    String rutaFinal = '';
-    if (ruta != null && ruta.isNotEmpty) {
-      rutaFinal = ruta.startsWith('http') ? ruta : ruta.startsWith('assets/') ? ruta : 'assets/$ruta';
-    }
-    if (rutaFinal.isEmpty) return const Icon(Icons.coffee, size: 40, color: Color(0xFF9B1C2C));
-    return rutaFinal.startsWith('http')
-        ? Image.network(rutaFinal, width:50, height:50, fit:BoxFit.contain, errorBuilder: (_,__,___)=>const Icon(Icons.coffee, size:40, color:Color(0xFF9B1C2C)))
-        : Image.asset(rutaFinal, width:50, height:50, fit:BoxFit.contain, errorBuilder: (_,__,___)=>const Icon(Icons.coffee, size:40, color:Color(0xFF9B1C2C)));
-  }
-
   @override
   Widget build(BuildContext context) {
     final carrito = Provider.of<CarritoProvider>(context);
+    final colorRojo = const Color(0xFF9B1C2C);
+    final colorFondo = const Color(0xFF2B0F0F);
 
     return Scaffold(
+      backgroundColor: colorFondo,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF9B1C2C),
-        title: const Text('MI PEDIDO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        leading: IconButton(icon:const Icon(Icons.arrow_back, color:Colors.white), onPressed:()=>Navigator.pop(context)),
+        title: const Text('Carrito', style: TextStyle(color: Colors.white)),
+        backgroundColor: colorRojo,
       ),
       body: carrito.items.isEmpty
-          ? const Center(child: Text('Tu carrito está vacío ☕', style: TextStyle(fontSize: 18, color: Colors.grey)))
-          : Column(children: [
-        Expanded(child: ListView.builder(padding:const EdgeInsets.all(16), itemCount:carrito.items.length, itemBuilder:(context, index){
-          final item = carrito.items[index];
-          return Card(margin:const EdgeInsets.only(bottom:12), child:Padding(padding:const EdgeInsets.all(12), child:Row(children:[
-            // ✅ IMAGEN A LA IZQUIERDA
-            _buildImagenProducto(item.producto.imagen),
-            const SizedBox(width:12),
-            // ✅ DATOS
-            Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
-              Text(item.producto.nombre, style:const TextStyle(fontWeight:FontWeight.bold, fontSize:14)),
-              const SizedBox(height:4),
-              Text('Cantidad: ${item.cantidad} • \$${item.subtotal.toStringAsFixed(0)}', style:TextStyle(fontSize:12, color:Colors.grey[600])),
-            ])),
-            // ✅ BOTONES CANTIDAD
-            Row(mainAxisSize:MainAxisSize.min, children:[
-              IconButton(icon:const Icon(Icons.remove_circle_outline, color:Color(0xFF9B1C2C)), onPressed:()=>carrito.cambiarCantidad(index, item.cantidad-1)),
-              IconButton(icon:const Icon(Icons.add_circle_outline, color:Color(0xFF9B1C2C)), onPressed:()=>carrito.cambiarCantidad(index, item.cantidad+1)),
-              IconButton(icon:const Icon(Icons.delete, color:Colors.red), onPressed:()=>carrito.eliminarProducto(index)),
-            ]),
-          ])));
-        })),
-        // ✅ TOTAL Y BOTÓN
-        Container(padding:const EdgeInsets.all(20), decoration:BoxDecoration(color:Colors.white, boxShadow:[BoxShadow(color:Colors.grey.shade200, blurRadius:5)]), child:Column(children:[
-          Row(mainAxisAlignment:MainAxisAlignment.spaceBetween, children:[const Text('TOTAL:', style:TextStyle(fontSize:18, fontWeight:FontWeight.bold)), Text('\$${carrito.total.toStringAsFixed(0)}', style:const TextStyle(fontSize:20, color:Color(0xFF9B1C2C), fontWeight:FontWeight.bold))]),
-          const SizedBox(height:12),
-          SizedBox(width:double.infinity, child:ElevatedButton(style:ElevatedButton.styleFrom(backgroundColor:const Color(0xFF9B1C2C), padding:const EdgeInsets.symmetric(vertical:14)), onPressed:(){ ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('¡Pedido realizado con éxito! ☕'))); carrito.vaciarCarrito(); Navigator.pop(context); }, child:const Text('CONFIRMAR PEDIDO', style:TextStyle(fontSize:16, color:Colors.white)))),
-        ])),
-      ]),
+          ? const Center(child: Text('Tu carrito está vacío', style: TextStyle(color: Colors.white)))
+          : Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: carrito.items.length,
+              itemBuilder: (ctx, i) {
+                final prod = carrito.items[i];
+                final cant = carrito.cantidades[prod.id] ?? 1;
+                return Card(
+                  color: Colors.white10,
+                  child: ListTile(
+                    leading: Container(
+                      width: 50,
+                      height: 50,
+                      color: Colors.brown[200],
+                      child: const Icon(Icons.coffee, color: Colors.brown),
+                    ),
+                    title: Text(prod.nombre, style: const TextStyle(color: Colors.white)),
+                    subtitle: Text('\$${prod.precio.toStringAsFixed(0)}', style: const TextStyle(color: Colors.amber)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove, color: Colors.white),
+                          onPressed: () => carrito.cambiarCantidad(prod.id, cant - 1),
+                        ),
+                        Text('$cant', style: const TextStyle(color: Colors.white)),
+                        IconButton(
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          onPressed: () => carrito.cambiarCantidad(prod.id, cant + 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.black26,
+            child: Column(
+              children: [
+                Text('Subtotal: \$${carrito.subtotal.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white)),
+                Text('Envío: \$${carrito.costoEnvio.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white)),
+                Text('TOTAL: \$${carrito.total.toStringAsFixed(0)}', style: const TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                const Text('Pago en línea', style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 15),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                        onPressed: () => carrito.limpiarCarrito(),
+                        child: const Text('Cancelar pedido', style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: colorRojo),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Procediendo al pago...'))
+                          );
+                        },
+                        child: const Text('Finalizar su compra', style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

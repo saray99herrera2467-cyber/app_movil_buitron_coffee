@@ -1,51 +1,52 @@
 import 'package:flutter/foundation.dart';
 import '../models/producto.dart';
 
-class ItemCarrito {
-  final Producto producto;
-  int cantidad;
+class CarritoProvider with ChangeNotifier {
+  List<Producto> _items = [];
+  Map<String, int> _cantidades = {};
 
-  ItemCarrito({required this.producto, this.cantidad = 1});
+  List<Producto> get items => _items;
+  Map<String, int> get cantidades => _cantidades;
 
-  double get subtotal => producto.precio * cantidad;
-}
+  double get subtotal {
+    double total = 0;
+    for (var p in _items) {
+      total += p.precio * (_cantidades[p.id] ?? 1);
+    }
+    return total;
+  }
 
-class CarritoProvider extends ChangeNotifier {
-  List<ItemCarrito> items = [];
+  double get costoEnvio => subtotal > 100000 ? 0 : 15000;
+  double get total => subtotal + costoEnvio;
 
-  int get cantidadTotal => items.fold(0, (sum, item) => sum + item.cantidad);
-  double get total => items.fold(0, (sum, item) => sum + item.subtotal);
-
-  // ✅ AGREGAR PRODUCTO
-  void agregarProducto(Producto prod) {
-    int index = items.indexWhere((item) => item.producto.id == prod.id);
-    if (index >= 0) {
-      items[index].cantidad++;
+  void agregarProducto(Producto producto) {
+    if (_cantidades.containsKey(producto.id)) {
+      _cantidades[producto.id] = (_cantidades[producto.id]! + 1);
     } else {
-      items.add(ItemCarrito(producto: prod));
+      _items.add(producto);
+      _cantidades[producto.id] = 1;
     }
     notifyListeners();
   }
 
-  // ✅ CAMBIAR CANTIDAD
-  void cambiarCantidad(int index, int nuevaCantidad) {
-    if (nuevaCantidad <= 0) {
-      items.removeAt(index);
-    } else {
-      items[index].cantidad = nuevaCantidad;
+  void cambiarCantidad(String productoId, int cantidad) {
+    if (cantidad <= 0) {
+      eliminarProducto(productoId);
+      return;
     }
+    _cantidades[productoId] = cantidad;
     notifyListeners();
   }
 
-  // ✅ ELIMINAR PRODUCTO
-  void eliminarProducto(int index) {
-    items.removeAt(index);
+  void eliminarProducto(String productoId) {
+    _items.removeWhere((p) => p.id == productoId);
+    _cantidades.remove(productoId);
     notifyListeners();
   }
 
-  // ✅ VACIAR CARRITO
-  void vaciarCarrito() {
-    items.clear();
+  void limpiarCarrito() {
+    _items.clear();
+    _cantidades.clear();
     notifyListeners();
   }
 }
