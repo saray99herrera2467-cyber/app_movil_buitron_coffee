@@ -83,11 +83,15 @@ class PerfilService {
     required String telefono,
     required String direccion,
   }) async {
-    await actualizarEnAuth(
-      nombre: nombre,
-      telefono: telefono,
-      direccion: direccion,
-    );
+    try {
+      if (_supabase.auth.currentUser != null) {
+        await actualizarEnAuth(
+          nombre: nombre,
+          telefono: telefono,
+          direccion: direccion,
+        );
+      }
+    } catch (_) {}
 
     await actualizarEnTabla(
       correo: correo,

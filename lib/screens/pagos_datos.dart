@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/auth_service.dart';
 import 'pagos_screen.dart';
+const Color cafePrincipal = Color(0xFF4E342E);
+const Color crema = Color(0xFFF5EFE6);
+const Color cremaClaro = Color(0xFFFFFCF7);
+const Color dorado = Color(0xFFC8A45D);
 
 class PagoDatosScreen extends StatefulWidget {
   final double total;
@@ -30,16 +35,16 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
   }
 
   Future<void> _cargarDatos() async {
-    final usuario = Supabase.instance.client.auth.currentUser;
-    if (usuario != null) {
-      _correoController.text = usuario.email ?? '';
+    final correo = await AuthService.obtenerCorreoSesion();
+    if (correo != null) {
+      _correoController.text = correo;
 
       // Cargar datos desde la tabla usuario
       try {
         final datos = await Supabase.instance.client
             .from('usuario')
             .select()
-            .eq('correo', usuario.email!)
+            .eq('correo', correo)
             .maybeSingle();
 
         if (datos != null) {
@@ -67,7 +72,7 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PagoMetodoScreen(
+        builder: (_) => PagosScreen(
           total: widget.total,
           items: widget.items,
           correo: _correoController.text.trim(),
@@ -82,90 +87,103 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: crema,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF9B1C2C),
-        title: const Text('PAGO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: cafePrincipal,
+        centerTitle: true,
+        title: const Text('DATOS DE ENVÍO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
       ),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF9B1C2C)))
+          ? const Center(child: CircularProgressIndicator(color: cafePrincipal))
           : SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Ingresa tu correo electrónico', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Ingresa tu correo electrónico', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cafePrincipal)),
             const SizedBox(height: 6),
-            const Text('Al ingresar utilizaremos tus datos para mejorar tu experiencia en nuestro sitio.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 16),
+            const Text('Utilizaremos tus datos para procesar el envío de tu pedido.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 20),
 
             // 📧 CORREO
-            TextField(
+            _campoTexto(
               controller: _correoController,
-              decoration: InputDecoration(
-                labelText: 'Correo',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
+              label: 'Correo electrónico',
+              icono: Icons.email_outlined,
+              habilitado: false,
             ),
             const SizedBox(height: 24),
 
             // 👤 NOMBRE
-            const Text('Tus datos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            TextField(
+            const Text('Tus datos personales', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cafePrincipal)),
+            const SizedBox(height: 16),
+            _campoTexto(
               controller: _nombreController,
-              decoration: InputDecoration(
-                labelText: 'Nombre completo',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
+              label: 'Nombre completo',
+              icono: Icons.person_outline,
             ),
-            const SizedBox(height: 12),
-            TextField(
+            const SizedBox(height: 16),
+            _campoTexto(
               controller: _telefonoController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'Teléfono',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
+              label: 'Teléfono',
+              icono: Icons.phone_outlined,
+              tipo: TextInputType.phone,
             ),
             const SizedBox(height: 24),
 
             // 🏠 DIRECCIÓN
-            const Text('Dirección de envío', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            TextField(
+            const Text('Lugar de entrega', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cafePrincipal)),
+            const SizedBox(height: 16),
+            _campoTexto(
               controller: _direccionController,
+              label: 'Dirección completa',
+              icono: Icons.location_on_outlined,
               maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Dirección completa',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 35),
 
             // ✅ BOTÓN
             SizedBox(
               width: double.infinity,
+              height: 50,
               child: ElevatedButton(
                 onPressed: _continuar,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9B1C2C),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: cafePrincipal,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
                 ),
-                child: const Text('Continuar', style: TextStyle(fontSize: 16, color: Colors.white)),
+                child: const Text('CONTINUAR AL PAGO', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1)),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _campoTexto({
+    required TextEditingController controller,
+    required String label,
+    required IconData icono,
+    bool habilitado = true,
+    int maxLines = 1,
+    TextInputType tipo = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      enabled: habilitado,
+      maxLines: maxLines,
+      keyboardType: tipo,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icono, color: cafePrincipal),
+        filled: true,
+        fillColor: habilitado ? cremaClaro : const Color(0xFFE9E3DC),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: dorado, width: 2)),
       ),
     );
   }

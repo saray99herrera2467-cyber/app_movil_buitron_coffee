@@ -122,18 +122,21 @@ class _HistorialScreenState extends State<HistorialScreen> {
   // ==========================================================
 
   String _estadoPedido(String? estado) {
-    switch (estado?.toLowerCase()) {
-      case 'pendiente':
+    switch (estado?.toUpperCase()) {
+      case 'PENDIENTE':
         return '⏳ Pendiente';
 
-      case 'pagado':
+      case 'PAGADO':
         return '✓ Pagado';
 
-      case 'enviado':
+      case 'ENVIADO':
         return '🚚 Enviado';
 
-      case 'entregado':
+      case 'ENTREGADO':
         return '☕ Entregado';
+
+      case 'CANCELADO':
+        return '❌ Cancelado';
 
       default:
         return estado ?? 'Desconocido';
@@ -145,18 +148,21 @@ class _HistorialScreenState extends State<HistorialScreen> {
   // ==========================================================
 
   Color _colorEstado(String? estado) {
-    switch (estado?.toLowerCase()) {
-      case 'entregado':
+    switch (estado?.toUpperCase()) {
+      case 'ENTREGADO':
         return const Color(0xFF5D4037);
 
-      case 'enviado':
+      case 'ENVIADO':
         return cafeClaro;
 
-      case 'pagado':
+      case 'PAGADO':
         return dorado;
 
-      case 'pendiente':
+      case 'PENDIENTE':
         return const Color(0xFF8D6E63);
+
+      case 'CANCELADO':
+        return Colors.red;
 
       default:
         return textoSuave;

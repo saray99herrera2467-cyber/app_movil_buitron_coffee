@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'catalogo_screen.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
 
 // ============================================================
 // PALETA DE COLORES
@@ -189,24 +191,63 @@ class _PqrsScreenState extends State<PqrsScreen> {
   }
 
   // ==========================================================
-  // ENVIAR PQRS
+  // ENVIAR PQRS REAL A SUPABASE
   // ==========================================================
 
-  void _enviar() {
-    if (!_camposCompletos ||
-        !_aceptaTratamientoDatos) {
+  Future<void> _enviar() async {
+    if (!_camposCompletos || !_aceptaTratamientoDatos) {
       setState(() {
         _mostrarError = true;
       });
-
       return;
     }
 
     setState(() {
       _mostrarError = false;
-      _radicado = _generarRadicado();
+      _cargandoEnvio = true;
     });
+
+    try {
+      final radicadoGenerado = _generarRadicado();
+      final int? usuarioId = await AuthService.obtenerIdSesion();
+      
+      final String descripcionFinal = 
+          'ASUNTO: ${_asuntoCtrl.text.trim()}\n\n${_descripcionCtrl.text.trim()}';
+
+      await ApiService.supabase.from(ApiService.tablaPqrs).insert({
+        'id_usuario': usuarioId,
+        'nombre': _nombreCtrl.text.trim(),
+        'email': _correoCtrl.text.trim(),
+        'telefono': _telefonoCtrl.text.trim(),
+        'descripcion': descripcionFinal,
+        'tipo': _tipo.etiqueta,
+        'estado': 'Pendiente',
+        'codigo_referencia': radicadoGenerado.numero,
+        'frecha_creacion': DateTime.now().toIso8601String(),
+        'fecha_actualizacion': DateTime.now().toIso8601String(),
+      });
+
+      if (!mounted) return;
+
+      setState(() {
+        _radicado = radicadoGenerado;
+        _cargandoEnvio = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _cargandoEnvio = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al enviar PQRS: $e'), 
+            backgroundColor: kCafePrincipal,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
+
+  bool _cargandoEnvio = false;
 
   // ==========================================================
   // REINICIAR
@@ -567,7 +608,9 @@ class _PqrsScreenState extends State<PqrsScreen> {
         // BOTÓN
         // ======================================================
 
-        _BotonPrincipal(
+        _cargandoEnvio
+            ? const Center(child: CircularProgressIndicator(color: kCafePrincipal))
+            : _BotonPrincipal(
           texto: 'Enviar solicitud',
           onPressed: _enviar,
         ),

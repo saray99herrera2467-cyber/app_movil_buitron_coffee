@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'catalogo_screen.dart';
 
 class VerificacionScreen extends StatefulWidget {
   const VerificacionScreen({super.key});
@@ -30,10 +31,14 @@ class _VerificacionScreenState extends State<VerificacionScreen> {
 
     await Future.delayed(const Duration(seconds: 1));
 
+    if (!mounted) return;
     setState(() => _cargando = false);
 
     if (mounted) {
-      Navigator.pushReplacementNamed(context, '/catalogo');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const CatalogoScreen()),
+      );
     }
   }
 
@@ -130,6 +135,8 @@ class _VerificacionScreenState extends State<VerificacionScreen> {
                       onChanged: (valor) {
                         if (valor.isNotEmpty && index < 3) {
                           _focusNodes[index + 1].requestFocus();
+                        } else if (valor.isEmpty && index > 0) {
+                          _focusNodes[index - 1].requestFocus();
                         }
                       },
                     ),

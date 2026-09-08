@@ -1,14 +1,99 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/carrito_provider.dart';
+import '../services/pagos_service.dart';
 import 'catalogo_screen.dart';
+import 'historial_screen.dart';
 
 class PagosScreen extends StatefulWidget {
-  const PagosScreen({super.key});
+  final double total;
+  final List<Map<String, dynamic>> items;
+  final String correo;
+  final String nombreCompleto;
+  final String telefono;
+  final String direccion;
+
+  const PagosScreen({
+    super.key,
+    required this.total,
+    required this.items,
+    required this.correo,
+    required this.nombreCompleto,
+    required this.telefono,
+    required this.direccion,
+  });
 
   @override
   State<PagosScreen> createState() => _PagosScreenState();
 }
 
 class _PagosScreenState extends State<PagosScreen> {
+  bool _cargando = false;
+  final TextEditingController _numeroController = TextEditingController();
+
+  // ==========================================================
+  // CONFIRMAR PAGO
+  // ==========================================================
+
+  Future<void> _confirmarPago() async {
+    if (_numeroController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingresa tu número de Nequi')),
+      );
+      return;
+    }
+
+    setState(() => _cargando = true);
+
+    try {
+      final pedido = await PedidoService.crearPedido(
+        correo: widget.correo,
+        nombreCompleto: widget.nombreCompleto,
+        telefono: widget.telefono,
+        direccion: widget.direccion,
+        metodoPago: 'Nequi',
+        numeroPago: _numeroController.text.trim(),
+        subtotal: widget.total - 15000, // Ajustar según lógica de envío
+        total: widget.total,
+        items: widget.items,
+      );
+
+      if (pedido != null) {
+        // Vaciar carrito
+        if (!mounted) return;
+        context.read<CarritoProvider>().limpiarCarrito();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('¡Pedido realizado con éxito!'),
+          ),
+        );
+
+        // Ir al historial
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HistorialScreen()),
+          (route) => false,
+        );
+      } else {
+        throw Exception('No se pudo crear el pedido');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _numeroController.dispose();
+    super.dispose();
+  }
 
   // ==========================================================
   // COLORES BUITRÓN COFFEE
@@ -156,6 +241,17 @@ class _PagosScreenState extends State<PagosScreen> {
                         color: textoSuave,
                       ),
                     ),
+
+                    const SizedBox(height: 10),
+
+                    Text(
+                      'Total a pagar: \$${widget.total.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: dorado,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -179,6 +275,7 @@ class _PagosScreenState extends State<PagosScreen> {
               const SizedBox(height: 8),
 
               TextField(
+                controller: _numeroController,
                 keyboardType: TextInputType.phone,
 
                 decoration: InputDecoration(
@@ -248,7 +345,7 @@ class _PagosScreenState extends State<PagosScreen> {
                   height: 50,
 
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _cargando ? null : _confirmarPago,
 
                     style: ElevatedButton.styleFrom(
                       backgroundColor: cafePrincipal,
@@ -264,7 +361,9 @@ class _PagosScreenState extends State<PagosScreen> {
                       ),
                     ),
 
-                    child: const Text(
+                    child: _cargando
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
                       'CONFIRMAR',
 
                       style: TextStyle(

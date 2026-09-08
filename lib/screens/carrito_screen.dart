@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/carrito_provider.dart';
+import '../models/producto.dart';
 import 'catalogo_screen.dart';
+import 'pagos_datos.dart';
 
 // ============================================================
 // COLORES DE BUITRÓN COFFEE
@@ -125,8 +127,7 @@ class CarritoScreen extends StatelessWidget {
                     carrito.cantidades[producto.id] ?? 1;
 
                 return _ProductoCarrito(
-                  nombre: producto.nombre,
-                  precio: producto.precio,
+                  producto: producto,
                   cantidad: cantidad,
                   onRestar: () {
                     carrito.cambiarCantidad(
@@ -139,6 +140,9 @@ class CarritoScreen extends StatelessWidget {
                       producto.id,
                       cantidad + 1,
                     );
+                  },
+                  onEliminar: () {
+                    carrito.eliminarProducto(producto.id);
                   },
                 );
               },
@@ -163,10 +167,16 @@ class CarritoScreen extends StatelessWidget {
               );
             },
             onFinalizar: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Procediendo al pago...',
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PagoDatosScreen(
+                    total: carrito.total,
+                    items: carrito.items.map((p) => {
+                      'id_producto': p.id,
+                      'cantidad': carrito.cantidades[p.id] ?? 1,
+                      'precio_unitario': p.precio,
+                    }).toList(),
                   ),
                 ),
               );
@@ -284,18 +294,18 @@ class _CarritoVacio extends StatelessWidget {
 // ============================================================
 
 class _ProductoCarrito extends StatelessWidget {
-  final String nombre;
-  final double precio;
+  final Producto producto;
   final int cantidad;
   final VoidCallback onRestar;
   final VoidCallback onSumar;
+  final VoidCallback onEliminar;
 
   const _ProductoCarrito({
-    required this.nombre,
-    required this.precio,
+    required this.producto,
     required this.cantidad,
     required this.onRestar,
     required this.onSumar,
+    required this.onEliminar,
   });
 
   @override
@@ -313,7 +323,7 @@ class _ProductoCarrito extends StatelessWidget {
         child: Row(
           children: [
             // ==================================================
-            // ICONO DEL PRODUCTO
+            // IMAGEN DEL PRODUCTO
             // ==================================================
 
             Container(
@@ -323,10 +333,9 @@ class _ProductoCarrito extends StatelessWidget {
                 color: crema,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(
-                Icons.coffee,
-                size: 38,
-                color: cafeClaro,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: _mostrarImagen(producto),
               ),
             ),
 
@@ -341,7 +350,7 @@ class _ProductoCarrito extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    nombre,
+                    producto.nombre,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -354,7 +363,7 @@ class _ProductoCarrito extends StatelessWidget {
                   const SizedBox(height: 6),
 
                   Text(
-                    '\$${precio.toStringAsFixed(0)}',
+                    '\$${producto.precio.toStringAsFixed(0)}',
                     style: const TextStyle(
                       color: cafePrincipal,
                       fontSize: 15,
@@ -366,49 +375,59 @@ class _ProductoCarrito extends StatelessWidget {
             ),
 
             // ==================================================
-            // CANTIDAD
+            // CANTIDAD Y ELIMINAR
             // ==================================================
 
-            Container(
-              decoration: BoxDecoration(
-                color: crema,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    tooltip: 'Restar',
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(
-                      Icons.remove,
-                      color: cafePrincipal,
-                      size: 20,
-                    ),
-                    onPressed: onRestar,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                IconButton(
+                  onPressed: onEliminar,
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
+                  tooltip: 'Eliminar del carrito',
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: crema,
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'Restar',
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(
+                          Icons.remove,
+                          color: cafePrincipal,
+                          size: 20,
+                        ),
+                        onPressed: onRestar,
+                      ),
 
-                  Text(
-                    '$cantidad',
-                    style: const TextStyle(
-                      color: textoOscuro,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                      Text(
+                        '$cantidad',
+                        style: const TextStyle(
+                          color: textoOscuro,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
 
-                  IconButton(
-                    tooltip: 'Sumar',
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(
-                      Icons.add,
-                      color: cafePrincipal,
-                      size: 20,
-                    ),
-                    onPressed: onSumar,
+                      IconButton(
+                        tooltip: 'Sumar',
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(
+                          Icons.add,
+                          color: cafePrincipal,
+                          size: 20,
+                        ),
+                        onPressed: onSumar,
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
@@ -605,6 +624,58 @@ class _ResumenCompra extends StatelessWidget {
       ),
     );
   }
+}
+
+// ============================================================
+// LÓGICA DE IMÁGENES (Compartida con catálogo)
+// ============================================================
+
+Widget _mostrarImagen(Producto producto) {
+  if (producto.imagen == null || producto.imagen!.isEmpty) {
+    return _imagenLocalFallback(producto);
+  }
+
+  final String img = producto.imagen!.trim();
+
+  if (img.startsWith('http')) {
+    return Image.network(
+      img,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _imagenLocalFallback(producto),
+    );
+  }
+
+  if (img.startsWith('assets/')) {
+    return Image.asset(
+      img,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _imagenLocalFallback(producto),
+    );
+  }
+
+  return Image.asset(
+    'assets/$img',
+    fit: BoxFit.cover,
+    errorBuilder: (context, error, stackTrace) => _imagenLocalFallback(producto),
+  );
+}
+
+Widget _imagenLocalFallback(Producto producto) {
+  final nombre = producto.nombre.toLowerCase().trim();
+  String path = 'assets/cafe1.png';
+
+  if (nombre.contains('tostado') || nombre.contains('tradicional') || nombre.contains('molido')) {
+    path = 'assets/cafe1.png';
+  } else if (nombre.contains('geisha') || nombre.contains('especial') || nombre.contains('grano')) {
+    path = 'assets/cafe2.png';
+  } else if (nombre.contains('bourbon') || nombre.contains('premium') || nombre.contains('buitron')) {
+    path = 'assets/cafe3.png';
+  }
+
+  return Image.asset(
+    path,
+    fit: BoxFit.cover,
+  );
 }
 
 // ============================================================

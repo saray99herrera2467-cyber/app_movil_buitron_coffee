@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/api_service.dart';
 
 class VerUsuariosScreen extends StatefulWidget {
   const VerUsuariosScreen({super.key});
@@ -11,24 +10,26 @@ class VerUsuariosScreen extends StatefulWidget {
 }
 
 class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
-  static const String _baseUrl = 'http://localhost:3001/api/auth/usuarios';
-  final colorRojo = const Color(0xFF9B1C2C);
-  final colorFondo = const Color(0xFFF8F5F2);
+  // ==========================================================
+  // COLORES BUITRÓN COFFEE
+  // ==========================================================
+  static const Color cafePrincipal = Color(0xFF4E342E);
+  static const Color cafeClaro = Color(0xFF795548);
+  static const Color crema = Color(0xFFF5EFE6);
+  static const Color cremaClaro = Color(0xFFFFFCF7);
+  static const Color dorado = Color(0xFFC8A45D);
+  static const Color textoOscuro = Color(0xFF3A2925);
+  static const Color textoSuave = Color(0xFF756860);
 
   List<dynamic> _usuarios = [];
   bool _cargando = true;
   String? _error;
-  String _filtro = 'todos'; // todos, admin, usuario, proveedor
+  String _filtro = 'todos'; // todos, admin, usuario
 
   @override
   void initState() {
     super.initState();
     _obtenerUsuarios();
-  }
-
-  Future<String?> _token() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
   }
 
   Future<void> _obtenerUsuarios() async {
@@ -37,69 +38,40 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
       _error = null;
     });
     try {
-      final token = await _token();
-      final res = await http.get(
-        Uri.parse(_baseUrl),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      if (res.statusCode == 200) {
-        setState(() {
-          _usuarios = jsonDecode(res.body);
-          _cargando = false;
-        });
-      } else {
-        setState(() {
-          _error = 'Error al cargar los usuarios';
-          _cargando = false;
-        });
-      }
-    } catch (_) {
+      final res = await ApiService.supabase
+          .from(ApiService.tablaUsuarios)
+          .select()
+          .order('id', ascending: true);
+
       setState(() {
-        _error = 'Error al cargar los usuarios';
+        _usuarios = res as List<dynamic>;
+        _cargando = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Error al cargar los usuarios: $e';
         _cargando = false;
       });
     }
   }
 
   List<dynamic> get _usuariosFiltrados {
-    switch (_filtro) {
-      case 'admin':
-        return _usuarios.where((u) => u['ID_Rol'] == 1).toList();
-      case 'usuario':
-        return _usuarios.where((u) => u['ID_Rol'] == 2).toList();
-      case 'proveedor':
-        return _usuarios.where((u) => u['ID_Rol'] == 3).toList();
-      default:
-        return _usuarios;
+    if (_filtro == 'admin') {
+      return _usuarios.where((u) => u['id_rol'] == 2).toList();
+    } else if (_filtro == 'usuario') {
+      return _usuarios.where((u) => u['id_rol'] == 1).toList();
     }
+    return _usuarios;
   }
 
-  int _contarRol(int rol) => _usuarios.where((u) => u['ID_Rol'] == rol).length;
+  int _contarRol(int rol) => _usuarios.where((u) => u['id_rol'] == rol).length;
 
   Color _colorRol(int? rol) {
-    switch (rol) {
-      case 1:
-        return const Color(0xFF9B1C2C);
-      case 2:
-        return Colors.blue;
-      case 3:
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
+    return rol == 2 ? dorado : cafeClaro;
   }
 
   String _textoRol(int? rol) {
-    switch (rol) {
-      case 1:
-        return 'Administrador';
-      case 2:
-        return 'Usuario';
-      case 3:
-        return 'Proveedor';
-      default:
-        return '${rol ?? ''}';
-    }
+    return rol == 2 ? 'Administrador' : 'Usuario';
   }
 
   Widget _estadisticaCard(String numero, String label, Color color) {
@@ -108,15 +80,22 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cremaClaro,
           borderRadius: BorderRadius.circular(10),
           border: Border(top: BorderSide(color: color, width: 3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           children: [
             Text(numero, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.black54), textAlign: TextAlign.center),
+            Text(label, style: const TextStyle(fontSize: 11, color: textoSuave), textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -130,8 +109,9 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
       child: ChoiceChip(
         label: Text(label),
         selected: activo,
-        selectedColor: colorRojo,
-        labelStyle: TextStyle(color: activo ? Colors.white : Colors.black87),
+        selectedColor: cafePrincipal,
+        backgroundColor: cremaClaro,
+        labelStyle: TextStyle(color: activo ? Colors.white : textoOscuro),
         onSelected: (_) => setState(() => _filtro = valor),
       ),
     );
@@ -139,22 +119,22 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final totalAdmin = _contarRol(1);
-    final totalUsuario = _contarRol(2);
-    final totalProveedor = _contarRol(3);
+    final totalAdmin = _contarRol(2);
+    final totalUsuario = _contarRol(1);
 
     return Scaffold(
-      backgroundColor: colorFondo,
+      backgroundColor: crema,
       appBar: AppBar(
-        backgroundColor: colorRojo,
+        backgroundColor: cafePrincipal,
         foregroundColor: Colors.white,
-        title: const Text('Lista de Usuarios'),
+        title: const Text('GESTIÓN DE USUARIOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _obtenerUsuarios),
         ],
       ),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: cafePrincipal))
           : RefreshIndicator(
         onRefresh: _obtenerUsuarios,
         child: Column(
@@ -167,25 +147,23 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
                 child: Text(_error!, style: const TextStyle(color: Colors.red)),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+              padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
               child: Row(
                 children: [
-                  _estadisticaCard('$totalAdmin', 'Administradores', colorRojo),
-                  _estadisticaCard('$totalUsuario', 'Usuarios', Colors.blue),
-                  _estadisticaCard('$totalProveedor', 'Proveedores', Colors.green),
-                  _estadisticaCard('${_usuarios.length}', 'Total', Colors.black87),
+                  _estadisticaCard('$totalAdmin', 'Admins', dorado),
+                  _estadisticaCard('$totalUsuario', 'Usuarios', cafeClaro),
+                  _estadisticaCard('${_usuarios.length}', 'Total', cafePrincipal),
                 ],
               ),
             ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               child: Row(
                 children: [
                   _chipFiltro('Todos', 'todos'),
                   _chipFiltro('Administradores', 'admin'),
                   _chipFiltro('Usuarios', 'usuario'),
-                  _chipFiltro('Proveedores', 'proveedor'),
                 ],
               ),
             ),
@@ -197,12 +175,14 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
                 itemCount: _usuariosFiltrados.length,
                 itemBuilder: (context, index) {
                   final usuario = _usuariosFiltrados[index];
-                  final rol = usuario['ID_Rol'] as int?;
+                  final rol = usuario['id_rol'] as int?;
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 10),
+                    color: cremaClaro,
+                    margin: const EdgeInsets.only(bottom: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
                     child: Padding(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -211,57 +191,28 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  '${usuario['Nombre_usuario'] ?? ''} ${usuario['Apellido'] ?? ''}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  '${usuario['nombre_usuario'] ?? ''} ${usuario['apellido'] ?? ''}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cafePrincipal),
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: _colorRol(rol).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   _textoRol(rol),
-                                  style: TextStyle(color: _colorRol(rol), fontSize: 12, fontWeight: FontWeight.w600),
+                                  style: TextStyle(color: _colorRol(rol), fontSize: 11, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.badge_outlined, size: 16, color: Colors.black45),
-                              const SizedBox(width: 6),
-                              Text('ID: ${usuario['ID_Usuario'] ?? ''}', style: const TextStyle(fontSize: 13, color: Colors.black54)),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.mail_outline, size: 16, color: Colors.black45),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(usuario['Correo'] ?? '', style: const TextStyle(fontSize: 13, color: Colors.black54)),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.description_outlined, size: 16, color: Colors.black45),
-                              const SizedBox(width: 6),
-                              Text('Doc: ${usuario['Documento'] ?? ''}', style: const TextStyle(fontSize: 13, color: Colors.black54)),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.phone_outlined, size: 16, color: Colors.black45),
-                              const SizedBox(width: 6),
-                              Text(usuario['Telefono'] ?? '', style: const TextStyle(fontSize: 13, color: Colors.black54)),
-                            ],
-                          ),
+                          const SizedBox(height: 12),
+                          _infoRow(Icons.mail_outline, usuario['correo'] ?? ''),
+                          _infoRow(Icons.phone_outlined, usuario['telefono'] ?? 'Sin teléfono'),
+                          _infoRow(Icons.location_on_outlined, usuario['direccion'] ?? 'Sin dirección'),
+                          _infoRow(Icons.badge_outlined, 'Doc: ${usuario['documento'] ?? ''}'),
                         ],
                       ),
                     ),
@@ -271,6 +222,19 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icono, String texto) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icono, size: 16, color: dorado),
+          const SizedBox(width: 8),
+          Expanded(child: Text(texto, style: const TextStyle(fontSize: 13, color: textoOscuro))),
+        ],
       ),
     );
   }

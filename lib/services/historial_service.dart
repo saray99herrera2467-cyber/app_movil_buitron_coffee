@@ -1,11 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_service.dart';
 
 class HistorialService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
-  // 📌 Obtener ID del usuario con sesión activa (buscando por correo)
+  // 📌 Obtener ID del usuario actual desde sesión local
   static Future<int?> _obtenerIdUsuarioActual() async {
-    final correo = _supabase.auth.currentUser?.email;
+    final correo = await AuthService.obtenerCorreoSesion();
     if (correo == null) return null;
 
     try {

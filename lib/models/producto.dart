@@ -56,14 +56,22 @@ class Producto {
           0.0;
     }
 
-    // IMAGEN
+    // IMAGEN (Flexibilidad máxima para detectar la columna)
     String? imagen;
 
-    if (json['imagen'] != null) {
-      final valorImagen = json['imagen'].toString().trim();
+    final posiblesCamposImagen = [
+      'imagen', 'url_imagen', 'foto', 'imagen_url', 'img', 'thumbnail',
+      'Imagen', 'Url_imagen', 'Foto', 'Imagen_url', 'Img', 'Thumbnail',
+      'nombre_imagen', 'nombre_archivo', 'archivo_imagen'
+    ];
 
-      if (valorImagen.isNotEmpty) {
-        imagen = valorImagen;
+    for (final campo in posiblesCamposImagen) {
+      if (json[campo] != null) {
+        final valor = json[campo].toString().trim();
+        if (valor.isNotEmpty) {
+          imagen = valor;
+          break;
+        }
       }
     }
 

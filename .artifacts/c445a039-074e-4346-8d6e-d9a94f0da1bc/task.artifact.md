@@ -1,0 +1,4 @@
+- `[x]` Update `PqrsScreen` (User) to match Supabase schema
+- `[x]` Update `AdminPqrsScreen` (Admin) to match Supabase schema and add response field
+- `[x]` Update `PqrsService` methods
+- `[x]` Verify all views with `flutter analyze`

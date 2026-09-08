@@ -1,18 +1,41 @@
+import 'package:flutter/foundation.dart';
 import '../models/resena.dart';
 import 'api_service.dart';
 
 class ResenaService {
   static final _supabase = ApiService.supabase;
 
-  // ⭐ Obtener todas las reseñas de un producto
-  static Future<List<ResenaModel>> obtenerResenasPorProducto(int productoId) async {
-    final List<dynamic> datos = await _supabase
-        .from(ApiService.tablaResenas)
-        .select('*, usuario(*)')
-        .eq('producto_id', productoId)
-        .order('id', ascending: false);
+  // ⭐ Obtener reseñas aprobadas de un producto
+  static Future<List<ResenaModel>> obtenerResenasAprobadasPorProducto(int productoId) async {
+    try {
+      final List<dynamic> datos = await _supabase
+          .from(ApiService.tablaResenas)
+          .select('*, usuario(*)')
+          .eq('producto_id', productoId)
+          .eq('estado', 'aprobada')
+          .order('id', ascending: false);
 
-    return datos.map((json) => ResenaModel.fromJson(json)).toList();
+      return datos.map((json) => ResenaModel.fromJson(Map<String, dynamic>.from(json))).toList();
+    } catch (e) {
+      debugPrint('❌ Error obteniendo reseñas aprobadas: $e');
+      return [];
+    }
+  }
+
+  // ⭐ Obtener todas las reseñas de un producto (para debug o admin si se requiere)
+  static Future<List<ResenaModel>> obtenerResenasPorProducto(int productoId) async {
+    try {
+      final List<dynamic> datos = await _supabase
+          .from(ApiService.tablaResenas)
+          .select('*, usuario(*)')
+          .eq('producto_id', productoId)
+          .order('id', ascending: false);
+
+      return datos.map((json) => ResenaModel.fromJson(Map<String, dynamic>.from(json))).toList();
+    } catch (e) {
+      debugPrint('❌ Error obteniendo todas las reseñas: $e');
+      return [];
+    }
   }
 
   // ✍️ Agregar una nueva reseña

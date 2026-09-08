@@ -1,7 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ApiService {
-  // Cliente de Supabase
+  // ============================================================
+  // CLIENTE DE SUPABASE
+  // ============================================================
+
   static SupabaseClient? _cliente;
 
   static SupabaseClient get supabase {
@@ -21,11 +24,24 @@ class ApiService {
     _cliente = cliente;
   }
 
-  // Tablas de Supabase
+  // ============================================================
+  // TABLAS DE SUPABASE
+  // ============================================================
+
   static const String tablaUsuarios = 'usuario';
+
+  // IMPORTANTE:
+  // En Supabase tu tabla se llama "producto"
   static const String tablaProductos = 'producto';
+
   static const String tablaCarrito = 'carrito';
+
   static const String tablaPedidos = 'pedido';
-  static const String tablaDetallePedido = 'detalle_pedido';
-  static const String tablaResenas = 'resenas';
+
+  static const String tablaDetallePedido =
+      'detalle_pedido';
+
+  static const String tablaResenas = 'reseñas';
+
+  static const String tablaPqrs = 'pqrs';
 }

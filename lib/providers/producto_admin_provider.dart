@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/producto.dart';
+import '../services/api_service.dart';
 
 class ProductoAdminProvider extends ChangeNotifier {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseClient _supabase = ApiService.supabase;
 
-  // ⚠️ Verifica que este sea el nombre exacto de tu tabla en Supabase
-  static const String _tabla = 'productos';
+  static const String _tabla = ApiService.tablaProductos;
 
   List<Producto> productos = [];
   bool cargando = false;
@@ -19,11 +19,12 @@ class ProductoAdminProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final data =
-      await _supabase.from(_tabla).select().order('id', ascending: true);
+      final data = await _supabase
+          .from(_tabla)
+          .select()
+          .order('id', ascending: true);
 
-      productos =
-          (data as List).map((json) => Producto.fromJson(json)).toList();
+      productos = (data as List).map((json) => Producto.fromJson(json)).toList();
     } catch (e) {
       error = 'Error al cargar productos: $e';
     } finally {

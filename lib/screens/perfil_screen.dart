@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/perfil_service.dart';
+import '../services/auth_service.dart';
 import 'catalogo_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
@@ -83,51 +84,28 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Future<void> _cargarPerfil() async {
     try {
-      final usuarioActual =
-          Supabase.instance.client.auth.currentUser;
+      // ✅ Obtener el correo desde la sesión local en lugar de Supabase Auth
+      final correo = await AuthService.obtenerCorreoSesion();
 
-      if (usuarioActual == null) {
+      if (correo == null || correo.isEmpty) {
         if (!mounted) return;
-
-        setState(() {
-          _cargando = false;
-        });
-
+        setState(() => _cargando = false);
         return;
       }
 
-      final correo = usuarioActual.email ?? '';
-
       _correoController.text = correo;
 
-      final datos =
-      await _perfilService.cargarDatosUsuario(correo);
+      final datos = await _perfilService.cargarDatosUsuario(correo);
 
       if (!mounted) return;
 
       if (datos != null) {
-        _nombreController.text =
-            (datos['nombre_usuario'] ?? '').toString();
-
-        _telefonoController.text =
-            (datos['telefono'] ?? '').toString();
-
-        _direccionController.text =
-            (datos['direccion'] ?? '').toString();
+        _nombreController.text = (datos['nombre_usuario'] ?? '').toString();
+        _telefonoController.text = (datos['telefono'] ?? '').toString();
+        _direccionController.text = (datos['direccion'] ?? '').toString();
       }
 
-      // Si no encuentra datos en la tabla,
-      // intenta obtener el nombre desde Auth.
-      if (_nombreController.text.isEmpty) {
-        final metadata = usuarioActual.userMetadata;
-
-        _nombreController.text =
-            (metadata?['nombre_usuario'] ?? '').toString();
-      }
-
-      setState(() {
-        _cargando = false;
-      });
+      setState(() => _cargando = false);
     } catch (e) {
       if (!mounted) return;
 
@@ -480,6 +458,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
         telefono: telefono,
         direccion: direccion,
       );
+
+      // ✅ Refrescar los datos en pantalla
+      await _cargarPerfil();
 
       if (!mounted) return;
 

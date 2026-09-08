@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
 
 class GestionResenasScreen extends StatefulWidget {
   const GestionResenasScreen({super.key});
@@ -11,9 +9,16 @@ class GestionResenasScreen extends StatefulWidget {
 }
 
 class _GestionResenasScreenState extends State<GestionResenasScreen> {
-  static const String _baseUrl = 'http://localhost:3001/api/resenas';
-  final colorRojo = const Color(0xFF9B1C2C);
-  final colorFondo = const Color(0xFFF8F5F2);
+  // ==========================================================
+  // COLORES BUITRÓN COFFEE
+  // ==========================================================
+  static const Color cafePrincipal = Color(0xFF4E342E);
+  static const Color cafeClaro = Color(0xFF795548);
+  static const Color crema = Color(0xFFF5EFE6);
+  static const Color cremaClaro = Color(0xFFFFFCF7);
+  static const Color dorado = Color(0xFFC8A45D);
+  static const Color textoOscuro = Color(0xFF3A2925);
+  static const Color textoSuave = Color(0xFF756860);
 
   List<dynamic> _resenas = [];
   bool _cargando = true;
@@ -27,36 +32,24 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
     _obtenerResenas();
   }
 
-  Future<String?> _token() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
-
   Future<void> _obtenerResenas() async {
     setState(() {
       _cargando = true;
       _error = null;
     });
     try {
-      final token = await _token();
-      final res = await http.get(
-        Uri.parse('$_baseUrl/admin'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      if (res.statusCode == 200) {
-        setState(() {
-          _resenas = jsonDecode(res.body);
-          _cargando = false;
-        });
-      } else {
-        setState(() {
-          _error = 'Error al cargar las reseñas';
-          _cargando = false;
-        });
-      }
-    } catch (_) {
+      final res = await ApiService.supabase
+          .from(ApiService.tablaResenas)
+          .select('*, producto(*), usuario(*)') 
+          .order('id', ascending: false);
+
       setState(() {
-        _error = 'Error al cargar las reseñas';
+        _resenas = res as List<dynamic>;
+        _cargando = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Error al cargar las reseñas: $e';
         _cargando = false;
       });
     }
@@ -64,39 +57,31 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
 
   Future<void> _actualizarEstado(int id, String estado) async {
     try {
-      final token = await _token();
-      final res = await http.patch(
-        Uri.parse('$_baseUrl/admin/$id'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'estado': estado}),
-      );
-      if (res.statusCode == 200) {
-        setState(() {
-          _exito = estado == 'aprobada'
-              ? 'Reseña aprobada correctamente'
-              : 'Reseña rechazada correctamente';
-        });
-        await _obtenerResenas();
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) setState(() => _exito = null);
-        });
-      } else {
-        setState(() => _error = 'Error al actualizar la reseña');
-      }
-    } catch (_) {
-      setState(() => _error = 'Error al actualizar la reseña');
+      await ApiService.supabase
+          .from(ApiService.tablaResenas)
+          .update({'estado': estado})
+          .eq('id', id);
+
+      setState(() {
+        _exito = estado == 'aprobada'
+            ? 'Reseña aprobada correctamente'
+            : 'Reseña rechazada correctamente';
+      });
+      await _obtenerResenas();
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _exito = null);
+      });
+    } catch (e) {
+      setState(() => _error = 'Error al actualizar: $e');
     }
   }
 
   List<dynamic> get _resenasFiltradas {
     if (_filtro == 'todas') return _resenas;
-    return _resenas.where((r) => r['estado'] == _filtro).toList();
+    return _resenas.where((r) => r['estado'].toString().toLowerCase() == _filtro).toList();
   }
 
-  int _contar(String estado) => _resenas.where((r) => r['estado'] == estado).length;
+  int _contar(String estado) => _resenas.where((r) => r['estado'].toString().toLowerCase() == estado.toLowerCase()).length;
 
   Widget _chipFiltro(String label, String valor, int? conteo) {
     final activo = _filtro == valor;
@@ -105,8 +90,9 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
       child: ChoiceChip(
         label: Text(conteo != null ? '$label ($conteo)' : label),
         selected: activo,
-        selectedColor: colorRojo,
-        labelStyle: TextStyle(color: activo ? Colors.white : Colors.black87),
+        selectedColor: cafePrincipal,
+        backgroundColor: cremaClaro,
+        labelStyle: TextStyle(color: activo ? Colors.white : textoOscuro),
         onSelected: (_) => setState(() => _filtro = valor),
       ),
     );
@@ -117,15 +103,15 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
       children: List.generate(5, (i) {
         return Icon(
           i < calificacion ? Icons.star : Icons.star_border,
-          size: 18,
-          color: Colors.amber,
+          size: 20,
+          color: dorado,
         );
       }),
     );
   }
 
   Color _colorEstado(String estado) {
-    switch (estado) {
+    switch (estado.toLowerCase()) {
       case 'aprobada':
         return Colors.green;
       case 'rechazada':
@@ -135,52 +121,33 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
     }
   }
 
-  String _textoEstado(String estado) {
-    switch (estado) {
-      case 'aprobada':
-        return 'Aprobada';
-      case 'rechazada':
-        return 'Rechazada';
-      default:
-        return 'Pendiente';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: colorFondo,
+      backgroundColor: crema,
       appBar: AppBar(
-        backgroundColor: colorRojo,
+        backgroundColor: cafePrincipal,
         foregroundColor: Colors.white,
-        title: const Text('Gestión de Reseñas'),
+        title: const Text('GESTIÓN DE RESEÑAS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _obtenerResenas),
         ],
       ),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: cafePrincipal))
           : RefreshIndicator(
         onRefresh: _obtenerResenas,
         child: Column(
           children: [
             if (_error != null)
-              Container(
-                width: double.infinity,
-                color: Colors.red.shade100,
-                padding: const EdgeInsets.all(10),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              ),
+              Container(width: double.infinity, color: Colors.red.shade100, padding: const EdgeInsets.all(10), child: Text(_error!, style: const TextStyle(color: Colors.red))),
             if (_exito != null)
-              Container(
-                width: double.infinity,
-                color: Colors.green.shade100,
-                padding: const EdgeInsets.all(10),
-                child: Text(_exito!, style: const TextStyle(color: Colors.green)),
-              ),
+              Container(width: double.infinity, color: Colors.green.shade100, padding: const EdgeInsets.all(10), child: Text(_exito!, style: const TextStyle(color: Colors.green))),
+            
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               child: Row(
                 children: [
                   _chipFiltro('Todas', 'todas', _resenas.length),
@@ -190,20 +157,35 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
                 ],
               ),
             ),
+            
             Expanded(
               child: _resenasFiltradas.isEmpty
                   ? const Center(child: Text('No hay reseñas para mostrar'))
                   : ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: _resenasFiltradas.length,
                 itemBuilder: (context, index) {
                   final resena = _resenasFiltradas[index];
                   final estado = resena['estado'] as String? ?? 'pendiente';
+                  
+                  // Obtener datos del producto y usuario con seguridad
+                  final rawProducto = resena['producto'];
+                  final producto = rawProducto is List && rawProducto.isNotEmpty 
+                      ? rawProducto[0] 
+                      : (rawProducto is Map ? rawProducto : null);
+                      
+                  final rawUsuario = resena['usuario'];
+                  final usuario = rawUsuario is List && rawUsuario.isNotEmpty 
+                      ? rawUsuario[0] 
+                      : (rawUsuario is Map ? rawUsuario : null);
+
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    color: cremaClaro,
+                    margin: const EdgeInsets.only(bottom: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    elevation: 3,
                     child: Padding(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -212,64 +194,61 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  resena['producto_nombre'] ?? '',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  producto?['nombre'] ?? 'Producto no encontrado',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cafePrincipal),
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: _colorEstado(estado).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(
-                                  _textoEstado(estado),
-                                  style: TextStyle(color: _colorEstado(estado), fontSize: 12, fontWeight: FontWeight.w600),
-                                ),
+                                child: Text(estado.toUpperCase(), style: TextStyle(color: _colorEstado(estado), fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.person, size: 16, color: dorado),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    usuario?['nombre_usuario'] ?? resena['nombre_usuario'] ?? 'Anónimo', 
+                                    style: const TextStyle(color: textoSuave, fontSize: 13, fontWeight: FontWeight.bold)
+                                  ),
+                                ],
+                              ),
+                          const Divider(height: 25),
+                          _estrellas(resena['calificacion'] ?? 0),
+                          const SizedBox(height: 10),
+                          Text(resena['comentario'] ?? 'Sin comentario', style: const TextStyle(fontSize: 14, color: textoOscuro)),
+                          const SizedBox(height: 15),
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Icon(Icons.person, size: 16, color: Colors.black54),
-                              const SizedBox(width: 4),
-                              Text(resena['nombre_usuario'] ?? '', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                              Text(
+                                '📅 ${resena['fecha'] ?? ''}',
+                                style: const TextStyle(fontSize: 12, color: cafeClaro),
+                              ),
+                              if (estado.toLowerCase() == 'pendiente')
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.check_circle, color: Colors.green, size: 30),
+                                      onPressed: () => _actualizarEstado(resena['id'], 'aprobada'),
+                                      tooltip: 'Aprobar',
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.cancel, color: Colors.red, size: 30),
+                                      onPressed: () => _actualizarEstado(resena['id'], 'rechazada'),
+                                      tooltip: 'Rechazar',
+                                    ),
+                                  ],
+                                ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          _estrellas(resena['calificacion'] ?? 0),
-                          const SizedBox(height: 6),
-                          Text(resena['comentario'] ?? '', style: const TextStyle(fontSize: 14)),
-                          const SizedBox(height: 6),
-                          Text(
-                            '📅 ${resena['fecha'] ?? ''}',
-                            style: const TextStyle(fontSize: 12, color: Colors.black45),
-                          ),
-                          if (estado == 'pendiente') ...[
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                                    onPressed: () => _actualizarEstado(resena['id'], 'aprobada'),
-                                    icon: const Icon(Icons.check, size: 18, color: Colors.white),
-                                    label: const Text('Aprobar', style: TextStyle(color: Colors.white)),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                    onPressed: () => _actualizarEstado(resena['id'], 'rechazada'),
-                                    icon: const Icon(Icons.close, size: 18, color: Colors.white),
-                                    label: const Text('Rechazar', style: TextStyle(color: Colors.white)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
                         ],
                       ),
                     ),

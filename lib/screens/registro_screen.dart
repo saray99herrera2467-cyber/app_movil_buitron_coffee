@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'Login_screen.dart';
+import 'login_screen.dart';
+import 'catalogo_screen.dart';
+import 'admin/admin_panel_screen.dart';
+import '../services/auth_service.dart'; 
 
 class RegistroPage extends StatefulWidget {
   const RegistroPage({super.key});
@@ -16,6 +19,9 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController nombreController =
   TextEditingController();
 
+  final TextEditingController apellidoController =
+  TextEditingController();
+
   final TextEditingController correoController =
   TextEditingController();
 
@@ -29,6 +35,7 @@ class _RegistroPageState extends State<RegistroPage> {
   TextEditingController();
 
   bool ocultarClave = true;
+  bool cargando = false;
 
   // =========================================================
   // COLORES BUITRÓN COFFEE
@@ -46,9 +53,12 @@ class _RegistroPageState extends State<RegistroPage> {
   // REGISTRARSE
   // =========================================================
 
-  void registrarse() {
+  void registrarse() async {
     String nombre =
     nombreController.text.trim();
+
+    String apellido =
+    apellidoController.text.trim();
 
     String correo =
     correoController.text.trim();
@@ -67,6 +77,7 @@ class _RegistroPageState extends State<RegistroPage> {
     // =======================================================
 
     if (nombre.isEmpty ||
+        apellido.isEmpty ||
         correo.isEmpty ||
         direccion.isEmpty ||
         telefono.isEmpty ||
@@ -86,33 +97,79 @@ class _RegistroPageState extends State<RegistroPage> {
       return;
     }
 
+    setState(() {
+      cargando = true;
+    });
+
     // =======================================================
-    // REGISTRO EXITOSO
+    // INTENTAR REGISTRO EN SUPABASE
     // =======================================================
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: cafePrincipal,
-        content: Text(
-          'Registro realizado correctamente',
-          style: TextStyle(
-            color: Colors.white,
+    try {
+      final usuario = await AuthService.registrar(
+        nombreUsuario: nombre,
+        apellido: apellido,
+        correo: correo,
+        clave: clave,
+        telefono: telefono,
+        direccion: direccion,
+      );
+
+      if (!mounted) return;
+
+      // =====================================================
+      // REGISTRO EXITOSO - REDIRIGIR SEGÚN ROL
+      // =====================================================
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: cafePrincipal,
+          content: Text(
+            'Registro realizado correctamente',
+            style: TextStyle(
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    // =======================================================
-    // VOLVER AL LOGIN
-    // =======================================================
+      final idRol = usuario['id_rol'] as int? ?? 1;
+      
+      Widget pantallaDestino = idRol == 2 
+          ? const AdminPanelScreen() 
+          : const CatalogoScreen();
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-        const LoginPage(),
-      ),
-    );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => pantallaDestino,
+        ),
+      );
+    } catch (e) {
+      // =====================================================
+      // ERROR AL REGISTRAR
+      // =====================================================
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+            style: const TextStyle(
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          cargando = false;
+        });
+      }
+    }
   }
 
   // =========================================================
@@ -262,6 +319,20 @@ class _RegistroPageState extends State<RegistroPage> {
                 const SizedBox(height: 16),
 
                 // =================================================
+                // APELLIDO
+                // =================================================
+
+                _campoTexto(
+                  controller: apellidoController,
+                  labelText: 'Apellido',
+                  hintText: 'Escriba su apellido',
+                  icono: Icons.badge_outlined,
+                  tipo: TextInputType.name,
+                ),
+
+                const SizedBox(height: 16),
+
+                // =================================================
                 // CORREO
                 // =================================================
 
@@ -405,7 +476,7 @@ class _RegistroPageState extends State<RegistroPage> {
                   height: 50,
 
                   child: ElevatedButton(
-                    onPressed: registrarse,
+                    onPressed: cargando ? null : registrarse,
 
                     style:
                     ElevatedButton.styleFrom(
@@ -424,7 +495,16 @@ class _RegistroPageState extends State<RegistroPage> {
                       ),
                     ),
 
-                    child: const Text(
+                    child: cargando
+                        ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                        : const Text(
                       'REGISTRARSE',
 
                       style: TextStyle(
@@ -577,6 +657,7 @@ class _RegistroPageState extends State<RegistroPage> {
   @override
   void dispose() {
     nombreController.dispose();
+    apellidoController.dispose();
     correoController.dispose();
     direccionController.dispose();
     telefonoController.dispose();

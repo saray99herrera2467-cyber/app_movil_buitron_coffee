@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 
 class AuthService {
-  static final _supabase = ApiService.supabase;
+  static SupabaseClient get _supabase => ApiService.supabase;
 
-  // Convierte la contraseña en un hash SHA-256 (no se guarda en texto plano)
+  // Convierte la contraseña en un hash SHA-256
   static String _hashClave(String clave) {
     final bytes = utf8.encode(clave);
     final digest = sha256.convert(bytes);
@@ -20,11 +22,12 @@ class AuthService {
     required String clave,
     String? documento,
     String? telefono,
+    String? direccion, // ✅ Nuevo campo
   }) async {
     try {
       final correoNormalizado = correo.trim().toLowerCase();
 
-      // Verificar si el correo ya existe (GET)
+      // Verificar si el correo ya existe
       final existe = await _supabase
           .from(ApiService.tablaUsuarios)
           .select('id')
@@ -35,29 +38,42 @@ class AuthService {
         throw Exception('El correo ya está registrado');
       }
 
-      // Insertar nuevo usuario (con contraseña hasheada)(POST)
+      // Insertar nuevo usuario con TODOS los campos
+      // Generar un documento ficticio si no se proporciona para evitar errores de restricción
+      final documentoFinal = documento ?? 'DOC-${DateTime.now().millisecondsSinceEpoch}';
+
       final respuesta = await _supabase
           .from(ApiService.tablaUsuarios)
           .insert({
         'nombre_usuario': nombreUsuario,
         'apellido': apellido,
         'correo': correoNormalizado,
-        'documento': documento ?? '',
+        'documento': documentoFinal,
         'telefono': telefono ?? '',
-        'clave': _hashClave(clave), // ya no se guarda en texto plano
-        'id_rol': 2, // 2 = Usuario normal
+        'direccion': direccion ?? '', 
+        'clave': _hashClave(clave),
+        'id_rol': 1, // Por defecto Rol Usuario
         'estado': true,
-      })
-          .select()
-          .single();
+      }).select().single();
+
+      // ✅ Guardar sesión local tras registro exitoso
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('usuario_correo', correoNormalizado);
+      await prefs.setInt('usuario_rol', 1);
 
       return respuesta;
+    } on PostgrestException catch (e) {
+      // Errores específicos de base de datos
+      if (e.code == '23505') {
+        throw Exception('El correo o documento ya está registrado');
+      }
+      throw Exception('Error en la base de datos: ${e.message}');
     } catch (e) {
-      throw Exception(e.toString().replaceFirst('Exception: ', ''));
+      throw Exception('Error inesperado: ${e.toString()}');
     }
   }
 
-  // Iniciar sesión (GET)
+  // Iniciar sesión
   static Future<Map<String, dynamic>> login({
     required String correo,
     required String clave,
@@ -70,7 +86,7 @@ class AuthService {
           .from(ApiService.tablaUsuarios)
           .select()
           .eq('correo', correoNormalizado)
-          .eq('clave', claveHasheada) // compara hash contra hash
+          .eq('clave', claveHasheada)
           .eq('estado', true)
           .maybeSingle();
 
@@ -78,13 +94,49 @@ class AuthService {
         throw Exception('Correo o contraseña incorrectos');
       }
 
+      // ✅ Guardar sesión localmente
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('usuario_correo', correoNormalizado);
+      await prefs.setInt('usuario_rol', respuesta['id_rol'] ?? 1);
+
       return respuesta;
     } catch (e) {
       throw Exception('Usuario o contraseña incorrectos');
     }
   }
 
-  // Obtener datos del usuario por ID (GET)
+  // Cerrar sesión local
+  static Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('usuario_correo');
+    await prefs.remove('usuario_rol');
+  }
+
+  // Obtener correo de la sesión guardada
+  static Future<String?> obtenerCorreoSesion() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('usuario_correo');
+  }
+
+  // Obtener ID del usuario de la sesión guardada
+  static Future<int?> obtenerIdSesion() async {
+    final correo = await obtenerCorreoSesion();
+    if (correo == null) return null;
+
+    try {
+      final res = await _supabase
+          .from(ApiService.tablaUsuarios)
+          .select('id')
+          .eq('correo', correo)
+          .maybeSingle();
+      
+      return res?['id'] as int?;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Obtener datos del usuario por ID
   static Future<Map<String, dynamic>> obtenerUsuario(int usuarioId) async {
     final respuesta = await _supabase
         .from(ApiService.tablaUsuarios)
