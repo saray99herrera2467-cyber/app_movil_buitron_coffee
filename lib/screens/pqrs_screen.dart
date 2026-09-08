@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'catalogo_screen.dart';
 
 // ============================================================
 // PALETA DE COLORES
 // ============================================================
 
-const Color kFondoApp = Color(0xFF1F0606);
-const Color kRojoHeader = Color(0xFF8E0B09);
-const Color kRojoHeaderClaro = Color(0xFFA1121C);
-const Color kCrema = Color(0xFFF8F6F3);
-const Color kInputGris = Color(0xFFE2E0DC);
-const Color kTextoOscuro = Color(0xFF3A1414);
-const Color kTextoSuave = Color(0xFF7A6B63);
+const Color kFondoApp = Color(0xFFF5EFE6);
+const Color kCafePrincipal = Color(0xFF4E342E);
+const Color kCafeClaro = Color(0xFF795548);
+const Color kDorado = Color(0xFFC8A45D);
+const Color kCrema = Color(0xFFFFFCF7);
+const Color kInput = Color(0xFFEDE5D9);
+const Color kTextoOscuro = Color(0xFF3A2925);
+const Color kTextoSuave = Color(0xFF756860);
 
 // ============================================================
 // MODELO PQRS
@@ -85,22 +87,40 @@ class PqrsScreen extends StatefulWidget {
 }
 
 class _PqrsScreenState extends State<PqrsScreen> {
-  // ==========================================================
-  // VARIABLES
-  // ==========================================================
-
   TipoPqrs _tipo = TipoPqrs.peticion;
 
-  final _nombreCtrl = TextEditingController();
-  final _correoCtrl = TextEditingController();
-  final _telefonoCtrl = TextEditingController();
-  final _asuntoCtrl = TextEditingController();
-  final _descripcionCtrl = TextEditingController();
+  final TextEditingController _nombreCtrl =
+  TextEditingController();
+
+  final TextEditingController _correoCtrl =
+  TextEditingController();
+
+  final TextEditingController _telefonoCtrl =
+  TextEditingController();
+
+  final TextEditingController _asuntoCtrl =
+  TextEditingController();
+
+  final TextEditingController _descripcionCtrl =
+  TextEditingController();
 
   bool _aceptaTratamientoDatos = false;
   bool _mostrarError = false;
 
   Radicado? _radicado;
+
+  // ==========================================================
+  // REGRESAR AL CATÁLOGO
+  // ==========================================================
+
+  void _volverAlCatalogo() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CatalogoScreen(),
+      ),
+    );
+  }
 
   // ==========================================================
   // DISPOSE
@@ -132,12 +152,13 @@ class _PqrsScreenState extends State<PqrsScreen> {
   // ==========================================================
 
   Radicado _generarRadicado() {
-    final anio = DateTime.now().year;
+    final ahora = DateTime.now();
+
+    final anio = ahora.year;
 
     final numero =
-        100000 + (DateTime.now().millisecondsSinceEpoch % 900000);
-
-    final ahora = DateTime.now();
+        100000 +
+            (ahora.millisecondsSinceEpoch % 900000);
 
     const meses = [
       'enero',
@@ -155,7 +176,9 @@ class _PqrsScreenState extends State<PqrsScreen> {
     ];
 
     final fecha =
-        '${ahora.day} de ${meses[ahora.month - 1]} de ${ahora.year}, '
+        '${ahora.day} de '
+        '${meses[ahora.month - 1]} de '
+        '${ahora.year}, '
         '${ahora.hour.toString().padLeft(2, '0')}:'
         '${ahora.minute.toString().padLeft(2, '0')}';
 
@@ -165,12 +188,13 @@ class _PqrsScreenState extends State<PqrsScreen> {
     );
   }
 
-  // ============================================================
+  // ==========================================================
   // ENVIAR PQRS
-  // ============================================================
+  // ==========================================================
 
   void _enviar() {
-    if (!_camposCompletos || !_aceptaTratamientoDatos) {
+    if (!_camposCompletos ||
+        !_aceptaTratamientoDatos) {
       setState(() {
         _mostrarError = true;
       });
@@ -184,9 +208,9 @@ class _PqrsScreenState extends State<PqrsScreen> {
     });
   }
 
-  // ============================================================
-  // REINICIAR FORMULARIO
-  // ============================================================
+  // ==========================================================
+  // REINICIAR
+  // ==========================================================
 
   void _reiniciar() {
     setState(() {
@@ -205,60 +229,9 @@ class _PqrsScreenState extends State<PqrsScreen> {
     });
   }
 
-  // ============================================================
-  // ELEMENTO DEL MENÚ LATERAL
-  // ============================================================
-
-  Widget _itemMenu({
-    required IconData icon,
-    required String texto,
-    required BuildContext contexto,
-    String? ruta,
-    bool esSalir = false,
-  }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: esSalir
-            ? kRojoHeader
-            : const Color(0xFF5A4A42),
-        size: 22,
-      ),
-
-      title: Text(
-        texto,
-        style: TextStyle(
-          fontSize: 15,
-          color: esSalir
-              ? kRojoHeader
-              : const Color(0xFF2D2D2D),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-
-      onTap: () {
-        // Cerrar el menú
-        Navigator.pop(contexto);
-
-        // Navegar
-        if (ruta != null) {
-          Navigator.pushNamed(contexto, ruta);
-        }
-
-        // Cerrar sesión
-        if (esSalir) {
-          Navigator.pushReplacementNamed(
-            contexto,
-            '/',
-          );
-        }
-      },
-    );
-  }
-
-  // ============================================================
-  // BUILD PRINCIPAL
-  // ============================================================
+  // ==========================================================
+  // BUILD
+  // ==========================================================
 
   @override
   Widget build(BuildContext context) {
@@ -266,187 +239,34 @@ class _PqrsScreenState extends State<PqrsScreen> {
       backgroundColor: kFondoApp,
 
       // ========================================================
-      // MENÚ LATERAL
-      // ========================================================
-
-      drawer: Drawer(
-        width: 280,
-
-        child: Column(
-          children: [
-            // --------------------------------------------------
-            // CABECERA DEL MENÚ
-            // --------------------------------------------------
-
-            Container(
-              width: double.infinity,
-
-              padding: const EdgeInsets.only(
-                top: 48,
-                bottom: 24,
-                left: 20,
-              ),
-
-              color: kRojoHeader,
-
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-
-                children: const [
-                  Text(
-                    'BUITRÓN COFFEE',
-
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-
-                  SizedBox(height: 4),
-
-                  Text(
-                    'Menú principal',
-
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // --------------------------------------------------
-            // OPCIONES DEL MENÚ
-            // --------------------------------------------------
-
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                ),
-
-                children: [
-                  // CATÁLOGO
-                  _itemMenu(
-                    icon: Icons.home,
-                    texto: 'Catálogo',
-                    contexto: context,
-                    ruta: '/catalogo',
-                  ),
-
-                  // PERFIL
-                  _itemMenu(
-                    icon: Icons.person,
-                    texto: 'Mi perfil',
-                    contexto: context,
-                    ruta: '/perfil',
-                  ),
-
-                  // CARRITO
-                  _itemMenu(
-                    icon: Icons.shopping_cart,
-                    texto: 'Carrito',
-                    contexto: context,
-                    ruta: '/carrito',
-                  ),
-
-                  // HISTORIAL
-                  _itemMenu(
-                    icon: Icons.history,
-                    texto: 'Historial de compras',
-                    contexto: context,
-                    ruta: '/historial',
-                  ),
-
-                  // UBICACIÓN
-                  _itemMenu(
-                    icon: Icons.location_on,
-                    texto: 'Ubicación',
-                    contexto: context,
-                    ruta: '/mapa',
-                  ),
-
-                  // PAGOS
-                  _itemMenu(
-                    icon: Icons.money,
-                    texto: 'Pagos',
-                    contexto: context,
-                    ruta: '/pagos',
-                  ),
-
-                  // RESEÑAS
-                  _itemMenu(
-                    icon: Icons.reviews_rounded,
-                    texto: 'Reseñas',
-                    contexto: context,
-                    ruta: '/resenas',
-                  ),
-
-                  // PQRS
-                  _itemMenu(
-                    icon: Icons.feedback_outlined,
-                    texto: 'PQRS',
-                    contexto: context,
-                    ruta: '/pqrs',
-                  ),
-
-                  const Divider(
-                    height: 1,
-                    indent: 20,
-                    endIndent: 20,
-                  ),
-
-                  // CERRAR SESIÓN
-                  _itemMenu(
-                    icon: Icons.logout,
-                    texto: 'Cerrar sesión',
-                    contexto: context,
-                    esSalir: true,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-
-      // ========================================================
       // APP BAR
       // ========================================================
 
       appBar: AppBar(
-        backgroundColor: kRojoHeader,
+        backgroundColor: kCafePrincipal,
         foregroundColor: Colors.white,
-        elevation: 0,
+        elevation: 3,
 
-        title: const Text(
-          'PQRS',
-
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            letterSpacing: 0.5,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+            size: 26,
           ),
+          onPressed: _volverAlCatalogo,
         ),
 
-        actions: [
-          // BOTÓN CARRITO
-          IconButton(
-            icon: const Icon(
-              Icons.shopping_cart,
-            ),
+        centerTitle: true,
 
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                '/carrito',
-              );
-            },
+        title: const Text(
+          'BUITRÓN COFFEE',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
           ),
-        ],
+        ),
       ),
 
       // ========================================================
@@ -454,47 +274,103 @@ class _PqrsScreenState extends State<PqrsScreen> {
       // ========================================================
 
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(18),
 
-          child: Align(
-            alignment: Alignment.topCenter,
+          child: Column(
+            children: [
+              // ==================================================
+              // ENCABEZADO
+              // ==================================================
 
-            child: SingleChildScrollView(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
+              Container(
+                width: double.infinity,
 
-                child: Container(
-                  width: double.infinity,
-                  color: kCrema,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 15,
+                ),
 
-                  child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.stretch,
+                decoration: BoxDecoration(
+                  color: kCafePrincipal,
 
-                    children: [
-                      // HEADER INTERNO
-                      _Header(
-                        mostrandoComprobante:
-                        _radicado != null,
+                  borderRadius:
+                  BorderRadius.circular(18),
+
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 7,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+
+                child: const Column(
+                  children: [
+                    Icon(
+                      Icons.forum_outlined,
+                      color: kDorado,
+                      size: 40,
+                    ),
+
+                    SizedBox(height: 8),
+
+                    Text(
+                      'PQRS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
                       ),
+                    ),
 
-                      Padding(
-                        padding:
-                        const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 18,
-                        ),
+                    SizedBox(height: 5),
 
-                        child: _radicado == null
-                            ? _buildFormulario()
-                            : _buildComprobante(),
+                    Text(
+                      'Peticiones, quejas, reclamos y sugerencias',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+
+              const SizedBox(height: 20),
+
+              // ==================================================
+              // CONTENEDOR PRINCIPAL
+              // ==================================================
+
+              Container(
+                width: double.infinity,
+
+                padding: const EdgeInsets.all(18),
+
+                decoration: BoxDecoration(
+                  color: kCrema,
+
+                  borderRadius:
+                  BorderRadius.circular(18),
+
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+
+                child: _radicado == null
+                    ? _buildFormulario()
+                    : _buildComprobante(),
+              ),
+            ],
           ),
         ),
       ),
@@ -502,7 +378,7 @@ class _PqrsScreenState extends State<PqrsScreen> {
   }
 
   // ============================================================
-  // FORMULARIO PQRS
+  // FORMULARIO
   // ============================================================
 
   Widget _buildFormulario() {
@@ -511,95 +387,58 @@ class _PqrsScreenState extends State<PqrsScreen> {
       CrossAxisAlignment.stretch,
 
       children: [
-        // ------------------------------------------------------
-        // ICONO
-        // ------------------------------------------------------
-
-        Center(
-          child: Container(
-            width: 74,
-            height: 74,
-
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-
-              color: kCrema,
-
-              border: Border.all(
-                color: kRojoHeader,
-                width: 1,
-              ),
-            ),
-
-            child: const Icon(
-              Icons.forum_outlined,
-              color: kRojoHeader,
-              size: 34,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // ------------------------------------------------------
-        // TITULO
-        // ------------------------------------------------------
-
         const Text(
           'Cuéntanos qué pasó',
-
           textAlign: TextAlign.center,
-
           style: TextStyle(
             color: kTextoOscuro,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
           ),
         ),
+
+        const SizedBox(height: 5),
 
         const Text(
-          'Peticiones, quejas, reclamos y sugerencias',
-
+          'Selecciona el tipo de solicitud que deseas realizar.',
           textAlign: TextAlign.center,
-
           style: TextStyle(
             color: kTextoSuave,
-            fontSize: 11,
+            fontSize: 12,
           ),
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
-        // ------------------------------------------------------
+        // ======================================================
         // TIPO DE PQRS
-        // ------------------------------------------------------
+        // ======================================================
 
         _SelectorTipo(
           seleccionado: _tipo,
-
-          onSeleccionar: (t) {
+          onSeleccionar: (tipo) {
             setState(() {
-              _tipo = t;
+              _tipo = tipo;
             });
           },
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
-        // ------------------------------------------------------
+        // ======================================================
         // NOMBRE
-        // ------------------------------------------------------
+        // ======================================================
 
         _CampoEtiquetado(
           label: 'Nombre',
           controller: _nombreCtrl,
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 13),
 
-        // ------------------------------------------------------
+        // ======================================================
         // CORREO
-        // ------------------------------------------------------
+        // ======================================================
 
         _CampoEtiquetado(
           label: 'Correo',
@@ -608,11 +447,11 @@ class _PqrsScreenState extends State<PqrsScreen> {
           TextInputType.emailAddress,
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 13),
 
-        // ------------------------------------------------------
+        // ======================================================
         // TELÉFONO
-        // ------------------------------------------------------
+        // ======================================================
 
         _CampoEtiquetado(
           label: 'Teléfono',
@@ -621,22 +460,22 @@ class _PqrsScreenState extends State<PqrsScreen> {
           TextInputType.phone,
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 13),
 
-        // ------------------------------------------------------
+        // ======================================================
         // ASUNTO
-        // ------------------------------------------------------
+        // ======================================================
 
         _CampoEtiquetado(
           label: 'Asunto',
           controller: _asuntoCtrl,
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 13),
 
-        // ------------------------------------------------------
+        // ======================================================
         // DESCRIPCIÓN
-        // ------------------------------------------------------
+        // ======================================================
 
         _CampoEtiquetado(
           label: 'Descripción',
@@ -644,19 +483,23 @@ class _PqrsScreenState extends State<PqrsScreen> {
           lineas: 4,
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 15),
 
-        // ------------------------------------------------------
-        // AUTORIZACIÓN
-        // ------------------------------------------------------
+        // ======================================================
+        // TRATAMIENTO DE DATOS
+        // ======================================================
 
-        InkWell(
-          onTap: () {
-            setState(() {
-              _aceptaTratamientoDatos =
-              !_aceptaTratamientoDatos;
-            });
-          },
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 5,
+            vertical: 4,
+          ),
+
+          decoration: BoxDecoration(
+            color: kInput,
+            borderRadius:
+            BorderRadius.circular(12),
+          ),
 
           child: Row(
             crossAxisAlignment:
@@ -666,21 +509,21 @@ class _PqrsScreenState extends State<PqrsScreen> {
               Checkbox(
                 value: _aceptaTratamientoDatos,
 
-                activeColor: kRojoHeader,
+                activeColor: kCafePrincipal,
 
-                onChanged: (v) {
+                onChanged: (valor) {
                   setState(() {
                     _aceptaTratamientoDatos =
-                        v ?? false;
+                        valor ?? false;
                   });
                 },
               ),
 
-              Expanded(
+              const Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(
+                  padding: EdgeInsets.only(
                     top: 12,
-                    right: 4,
+                    right: 5,
                   ),
 
                   child: Text(
@@ -698,36 +541,36 @@ class _PqrsScreenState extends State<PqrsScreen> {
           ),
         ),
 
-        // ------------------------------------------------------
-        // ERROR
-        // ------------------------------------------------------
+        // ======================================================
+        // MENSAJE DE ERROR
+        // ======================================================
 
         if (_mostrarError)
           const Padding(
-            padding: EdgeInsets.only(top: 8),
+            padding: EdgeInsets.only(
+              top: 10,
+            ),
 
             child: Text(
-              'Completa nombre, correo, asunto y descripción, y acepta el tratamiento de datos.',
+              'Completa todos los campos obligatorios y acepta el tratamiento de datos.',
 
               style: TextStyle(
-                color: kRojoHeaderClaro,
+                color: Colors.red,
                 fontSize: 11,
               ),
             ),
           ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
-        // ------------------------------------------------------
-        // BOTÓN ENVIAR
-        // ------------------------------------------------------
+        // ======================================================
+        // BOTÓN
+        // ======================================================
 
         _BotonPrincipal(
           texto: 'Enviar solicitud',
           onPressed: _enviar,
         ),
-
-        const SizedBox(height: 6),
       ],
     );
   }
@@ -742,6 +585,37 @@ class _PqrsScreenState extends State<PqrsScreen> {
       CrossAxisAlignment.stretch,
 
       children: [
+        const Icon(
+          Icons.check_circle_outline,
+          color: kDorado,
+          size: 55,
+        ),
+
+        const SizedBox(height: 10),
+
+        const Text(
+          '¡Solicitud enviada!',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: kCafePrincipal,
+            fontSize: 19,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 5),
+
+        const Text(
+          'Tu solicitud ha sido registrada correctamente.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: kTextoSuave,
+            fontSize: 12,
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
         _ComprobanteRadicado(
           tipo: _tipo,
           nombre: _nombreCtrl.text,
@@ -750,70 +624,19 @@ class _PqrsScreenState extends State<PqrsScreen> {
           radicado: _radicado!,
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
         _BotonPrincipal(
           texto: 'Radicar otra solicitud',
           onPressed: _reiniciar,
         ),
-
-        const SizedBox(height: 6),
       ],
     );
   }
 }
 
 // ============================================================
-// HEADER INTERNO DE PQRS
-// ============================================================
-
-class _Header extends StatelessWidget {
-  final bool mostrandoComprobante;
-
-  const _Header({
-    required this.mostrandoComprobante,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: kRojoHeader,
-
-      padding: const EdgeInsets.symmetric(
-        vertical: 14,
-        horizontal: 12,
-      ),
-
-      child: Row(
-        children: [
-          const SizedBox(width: 22),
-
-          Expanded(
-            child: Text(
-              mostrandoComprobante
-                  ? 'SOLICITUD RADICADA'
-                  : 'PQRS',
-
-              textAlign: TextAlign.center,
-
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 22),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// SELECTOR DE TIPO PQRS
+// SELECTOR DE TIPO
 // ============================================================
 
 class _SelectorTipo extends StatelessWidget {
@@ -829,61 +652,73 @@ class _SelectorTipo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: TipoPqrs.values.map((tipo) {
-        final activo = tipo == seleccionado;
+        final bool activo =
+            tipo == seleccionado;
 
         return Expanded(
           child: Padding(
             padding:
             const EdgeInsets.symmetric(
-              horizontal: 4,
+              horizontal: 3,
             ),
 
             child: InkWell(
-              onTap: () => onSeleccionar(tipo),
+              onTap: () {
+                onSeleccionar(tipo);
+              },
 
               borderRadius:
               BorderRadius.circular(12),
 
-              child: Container(
+              child: AnimatedContainer(
+                duration:
+                const Duration(
+                  milliseconds: 200,
+                ),
+
                 padding:
                 const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 4,
+                  vertical: 12,
+                  horizontal: 3,
                 ),
 
                 decoration: BoxDecoration(
                   color: activo
-                      ? kRojoHeader
-                      : kInputGris,
+                      ? kCafePrincipal
+                      : kInput,
 
                   borderRadius:
                   BorderRadius.circular(12),
+
+                  border: Border.all(
+                    color: activo
+                        ? kDorado
+                        : Colors.transparent,
+                  ),
                 ),
 
                 child: Column(
                   children: [
                     Icon(
                       tipo.icono,
-
-                      size: 18,
+                      size: 19,
 
                       color: activo
-                          ? Colors.white
+                          ? kDorado
                           : kTextoOscuro,
                     ),
 
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 5),
 
                     Text(
                       tipo.etiqueta,
-
                       textAlign:
                       TextAlign.center,
 
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight:
-                        FontWeight.w600,
+                        FontWeight.bold,
 
                         color: activo
                             ? Colors.white
@@ -902,7 +737,7 @@ class _SelectorTipo extends StatelessWidget {
 }
 
 // ============================================================
-// CAMPO ETIQUETADO
+// CAMPO
 // ============================================================
 
 class _CampoEtiquetado extends StatelessWidget {
@@ -930,9 +765,9 @@ class _CampoEtiquetado extends StatelessWidget {
           label,
 
           style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
             color: kTextoOscuro,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
           ),
         ),
 
@@ -940,45 +775,67 @@ class _CampoEtiquetado extends StatelessWidget {
 
         TextField(
           controller: controller,
+
           keyboardType: keyboardType,
 
           minLines: lineas,
 
           maxLines:
-          lineas == 1 ? 1 : lineas + 2,
+          lineas == 1
+              ? 1
+              : lineas + 1,
 
           style: const TextStyle(
-            fontSize: 13,
             color: kTextoOscuro,
+            fontSize: 13,
           ),
 
           decoration: InputDecoration(
             filled: true,
 
-            fillColor: kInputGris,
+            fillColor: kInput,
 
             hintText:
             'Ingresa tu ${label.toLowerCase()}',
 
-            hintStyle: const TextStyle(
+            hintStyle:
+            const TextStyle(
               color: kTextoSuave,
               fontSize: 12,
             ),
 
             contentPadding:
             const EdgeInsets.symmetric(
-              horizontal: 16,
+              horizontal: 15,
               vertical: 12,
             ),
 
             border: OutlineInputBorder(
               borderRadius:
               BorderRadius.circular(
-                lineas == 1 ? 24 : 14,
+                lineas == 1
+                    ? 24
+                    : 14,
               ),
 
               borderSide:
               BorderSide.none,
+            ),
+
+            focusedBorder:
+            OutlineInputBorder(
+              borderRadius:
+              BorderRadius.circular(
+                lineas == 1
+                    ? 24
+                    : 14,
+              ),
+
+              borderSide:
+              const BorderSide(
+                color: kDorado,
+                width: 2,
+              ),
             ),
           ),
         ),
@@ -991,7 +848,8 @@ class _CampoEtiquetado extends StatelessWidget {
 // BOTÓN PRINCIPAL
 // ============================================================
 
-class _BotonPrincipal extends StatelessWidget {
+class _BotonPrincipal
+    extends StatelessWidget {
   final String texto;
   final VoidCallback onPressed;
 
@@ -1003,21 +861,25 @@ class _BotonPrincipal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 46,
+      width: double.infinity,
+      height: 50,
 
       child: ElevatedButton(
         onPressed: onPressed,
 
         style: ElevatedButton.styleFrom(
-          backgroundColor: kRojoHeader,
-          foregroundColor: Colors.white,
+          backgroundColor:
+          kCafePrincipal,
 
-          elevation: 0,
+          foregroundColor:
+          Colors.white,
+
+          elevation: 3,
 
           shape:
           RoundedRectangleBorder(
             borderRadius:
-            BorderRadius.circular(24),
+            BorderRadius.circular(25),
           ),
         ),
 
@@ -1025,8 +887,8 @@ class _BotonPrincipal extends StatelessWidget {
           texto,
 
           style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -1035,7 +897,7 @@ class _BotonPrincipal extends StatelessWidget {
 }
 
 // ============================================================
-// COMPROBANTE DEL RADICADO
+// COMPROBANTE
 // ============================================================
 
 class _ComprobanteRadicado
@@ -1057,13 +919,19 @@ class _ComprobanteRadicado
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding:
+      const EdgeInsets.all(16),
 
       decoration: BoxDecoration(
-        color: kInputGris,
+        color: kInput,
 
         borderRadius:
         BorderRadius.circular(14),
+
+        border: Border.all(
+          color: kDorado,
+          width: 1,
+        ),
       ),
 
       child: Column(
@@ -1071,72 +939,68 @@ class _ComprobanteRadicado
         CrossAxisAlignment.start,
 
         children: [
-          Padding(
-            padding:
-            const EdgeInsets.only(
-              bottom: 10,
-            ),
+          Row(
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: kCafePrincipal,
+                size: 22,
+              ),
 
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  color: kRojoHeader,
-                  size: 20,
-                ),
+              const SizedBox(width: 8),
 
-                const SizedBox(width: 6),
-
-                Text(
+              Expanded(
+                child: Text(
                   'Tu ${tipo.etiqueta.toLowerCase()} fue radicada',
 
-                  style: const TextStyle(
+                  style:
+                  const TextStyle(
                     color: kTextoOscuro,
                     fontWeight:
-                    FontWeight.w600,
+                    FontWeight.bold,
                     fontSize: 13,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
 
-          _filaComprobante(
+          const SizedBox(height: 12),
+
+          _fila(
             'N° de radicado',
             radicado.numero,
           ),
 
-          _filaComprobante(
+          _fila(
             'Fecha',
             radicado.fecha,
           ),
 
-          _filaComprobante(
+          _fila(
             'Nombre',
             nombre,
           ),
 
-          _filaComprobante(
+          _fila(
             'Correo',
             correo,
           ),
 
-          _filaComprobante(
+          _fila(
             'Asunto',
             asunto,
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
 
-          Text(
-            'Recibirás respuesta en máximo '
-                '${radicado.diasHabiles} días hábiles '
-                'al correo registrado.',
+          const Text(
+            'Recibirás respuesta en máximo 15 días hábiles al correo registrado.',
 
-            style: const TextStyle(
-              fontSize: 11,
+            style: TextStyle(
               color: kTextoSuave,
-              height: 1.3,
+              fontSize: 11,
+              height: 1.4,
             ),
           ),
         ],
@@ -1145,10 +1009,10 @@ class _ComprobanteRadicado
   }
 
   // ==========================================================
-  // FILA DEL COMPROBANTE
+  // FILA
   // ==========================================================
 
-  Widget _filaComprobante(
+  Widget _fila(
       String etiqueta,
       String valor,
       ) {
@@ -1166,13 +1030,14 @@ class _ComprobanteRadicado
           Text(
             etiqueta,
 
-            style: const TextStyle(
-              fontSize: 11,
+            style:
+            const TextStyle(
               color: kTextoSuave,
+              fontSize: 11,
             ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
 
           Flexible(
             child: Text(
@@ -1183,11 +1048,12 @@ class _ComprobanteRadicado
               textAlign:
               TextAlign.end,
 
-              style: const TextStyle(
+              style:
+              const TextStyle(
+                color: kTextoOscuro,
                 fontSize: 11,
                 fontWeight:
-                FontWeight.w600,
-                color: kTextoOscuro,
+                FontWeight.bold,
               ),
             ),
           ),

@@ -19,6 +19,18 @@ class _LoginPageState extends State<LoginPage> {
   bool ocultarClave = true;
 
   // ==========================================================
+  // COLORES BUITRÓN COFFEE
+  // ==========================================================
+
+  static const Color cafePrincipal = Color(0xFF4E342E);
+  static const Color cafeClaro = Color(0xFF795548);
+  static const Color crema = Color(0xFFF5EFE6);
+  static const Color cremaClaro = Color(0xFFFFFCF7);
+  static const Color dorado = Color(0xFFC8A45D);
+  static const Color textoOscuro = Color(0xFF3A2925);
+  static const Color textoSuave = Color(0xFF756860);
+
+  // ==========================================================
   // INICIAR SESIÓN
   // ==========================================================
 
@@ -29,8 +41,10 @@ class _LoginPageState extends State<LoginPage> {
     if (correo.isEmpty || clave.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
+          backgroundColor: cafePrincipal,
           content: Text(
             'Por favor, completa todos los campos',
+            style: TextStyle(color: Colors.white),
           ),
         ),
       );
@@ -53,34 +67,33 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5F2),
+      backgroundColor: crema,
 
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
 
-              // ================================================
+              // ==================================================
               // ENCABEZADO
-              // ================================================
+              // ==================================================
 
               Container(
                 width: double.infinity,
-                height: 55,
+                height: 65,
 
                 decoration: const BoxDecoration(
-                  color: Color(0xFF9E0000),
+                  color: cafePrincipal,
                 ),
 
                 child: const Center(
                   child: Text(
                     'BUITRON COFFEE',
-
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 19,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
+                      letterSpacing: 1.5,
                     ),
                   ),
                 ),
@@ -88,51 +101,87 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 35),
 
-              // ================================================
-              // LOGO
-              // ================================================
+              // ==================================================
+              // IMAGEN LOGIN
+              // ==================================================
 
               Container(
-                width: 140,
-                height: 140,
+                width: 165,
+                height: 165,
 
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  color: cremaClaro,
 
                   border: Border.all(
-                    color: const Color(0xFF5B4636),
-                    width: 2,
+                    color: dorado,
+                    width: 3,
                   ),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
 
-                child: const Icon(
-                  Icons.local_cafe,
-                  size: 75,
-                  color: Color(0xFF5B4636),
+                child: ClipOval(
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+
+                    child: Image.asset(
+                      'assets/login.png',
+
+                      fit: BoxFit.cover,
+
+                      errorBuilder:
+                          (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.local_cafe,
+                          size: 75,
+                          color: cafePrincipal,
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 35),
+              const SizedBox(height: 30),
 
-              // ================================================
-              // TITULO
-              // ================================================
+              // ==================================================
+              // TÍTULO
+              // ==================================================
 
               const Text(
                 'INICIO DE SESIÓN',
 
                 style: TextStyle(
-                  fontSize: 23,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF5B4636),
+                  color: cafePrincipal,
+                  letterSpacing: 0.5,
                 ),
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 8),
 
-              // ================================================
+              const Text(
+                'Ingresa a tu cuenta',
+
+                style: TextStyle(
+                  fontSize: 14,
+                  color: textoSuave,
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ==================================================
               // CORREO
-              // ================================================
+              // ==================================================
 
               Padding(
                 padding:
@@ -147,21 +196,41 @@ class _LoginPageState extends State<LoginPage> {
                   decoration: InputDecoration(
                     labelText: 'Correo electrónico',
 
+                    labelStyle: const TextStyle(
+                      color: textoSuave,
+                    ),
+
                     prefixIcon: const Icon(
                       Icons.email_outlined,
-                      color: Color(0xFF9E0000),
+                      color: cafePrincipal,
                     ),
 
                     filled: true,
 
-                    fillColor: Colors.white,
+                    fillColor: cremaClaro,
 
                     border: OutlineInputBorder(
                       borderRadius:
-                      BorderRadius.circular(8),
+                      BorderRadius.circular(12),
 
-                      borderSide:
-                      BorderSide.none,
+                      borderSide: BorderSide.none,
+                    ),
+
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(12),
+
+                      borderSide: BorderSide.none,
+                    ),
+
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(12),
+
+                      borderSide: const BorderSide(
+                        color: dorado,
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
@@ -169,9 +238,9 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 18),
 
-              // ================================================
+              // ==================================================
               // CONTRASEÑA
-              // ================================================
+              // ==================================================
 
               Padding(
                 padding:
@@ -185,9 +254,13 @@ class _LoginPageState extends State<LoginPage> {
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
 
+                    labelStyle: const TextStyle(
+                      color: textoSuave,
+                    ),
+
                     prefixIcon: const Icon(
                       Icons.lock_outline,
-                      color: Color(0xFF9E0000),
+                      color: cafePrincipal,
                     ),
 
                     suffixIcon: IconButton(
@@ -196,8 +269,7 @@ class _LoginPageState extends State<LoginPage> {
                             ? Icons.visibility_off
                             : Icons.visibility,
 
-                        color:
-                        const Color(0xFF9E0000),
+                        color: cafeClaro,
                       ),
 
                       onPressed: () {
@@ -210,31 +282,46 @@ class _LoginPageState extends State<LoginPage> {
 
                     filled: true,
 
-                    fillColor: Colors.white,
+                    fillColor: cremaClaro,
 
                     border: OutlineInputBorder(
                       borderRadius:
-                      BorderRadius.circular(8),
+                      BorderRadius.circular(12),
 
-                      borderSide:
-                      BorderSide.none,
+                      borderSide: BorderSide.none,
+                    ),
+
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(12),
+
+                      borderSide: BorderSide.none,
+                    ),
+
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(12),
+
+                      borderSide: const BorderSide(
+                        color: dorado,
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
               ),
 
-              // ================================================
+              // ==================================================
               // OLVIDASTE CONTRASEÑA
-              // ================================================
+              // ==================================================
 
               Align(
-                alignment:
-                Alignment.centerRight,
+                alignment: Alignment.centerRight,
 
                 child: Padding(
                   padding: const EdgeInsets.only(
-                    right: 30,
-                    top: 10,
+                    right: 25,
+                    top: 8,
                   ),
 
                   child: TextButton(
@@ -247,39 +334,40 @@ class _LoginPageState extends State<LoginPage> {
                       '¿Olvidaste tu contraseña?',
 
                       style: TextStyle(
-                        color:
-                        Color(0xFF9E0000),
+                        color: cafePrincipal,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
-              // ================================================
+              // ==================================================
               // BOTÓN INICIAR SESIÓN
-              // ================================================
+              // ==================================================
 
               SizedBox(
                 width: 250,
-                height: 48,
+                height: 50,
 
                 child: ElevatedButton(
                   onPressed: iniciarSesion,
 
-                  style:
-                  ElevatedButton.styleFrom(
-                    backgroundColor:
-                    const Color(0xFF9E0000),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cafePrincipal,
 
-                    foregroundColor:
-                    Colors.white,
+                    foregroundColor: Colors.white,
 
-                    shape:
-                    RoundedRectangleBorder(
+                    elevation: 3,
+
+                    shadowColor:
+                    Colors.black.withValues(alpha: 0.2),
+
+                    shape: RoundedRectangleBorder(
                       borderRadius:
-                      BorderRadius.circular(5),
+                      BorderRadius.circular(10),
                     ),
                   ),
 
@@ -287,20 +375,19 @@ class _LoginPageState extends State<LoginPage> {
                     'INICIAR SESIÓN',
 
                     style: TextStyle(
-                      fontWeight:
-                      FontWeight.bold,
-
+                      fontWeight: FontWeight.bold,
                       fontSize: 15,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
 
-              // ================================================
+              // ==================================================
               // REGISTRO
-              // ================================================
+              // ==================================================
 
               Row(
                 mainAxisAlignment:
@@ -309,10 +396,10 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
 
                   const Text(
-                    '¿No tienes una cuenta? ',
+                    '¿No tienes una cuenta?',
 
                     style: TextStyle(
-                      color: Colors.black54,
+                      color: textoSuave,
                     ),
                   ),
 
@@ -334,11 +421,8 @@ class _LoginPageState extends State<LoginPage> {
                       'Registrarse',
 
                       style: TextStyle(
-                        color:
-                        Color(0xFF9E0000),
-
-                        fontWeight:
-                        FontWeight.bold,
+                        color: cafePrincipal,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),

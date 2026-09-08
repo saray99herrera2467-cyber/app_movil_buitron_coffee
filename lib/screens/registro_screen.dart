@@ -9,6 +9,10 @@ class RegistroPage extends StatefulWidget {
 }
 
 class _RegistroPageState extends State<RegistroPage> {
+  // =========================================================
+  // CONTROLADORES
+  // =========================================================
+
   final TextEditingController nombreController =
   TextEditingController();
 
@@ -27,17 +31,41 @@ class _RegistroPageState extends State<RegistroPage> {
   bool ocultarClave = true;
 
   // =========================================================
+  // COLORES BUITRÓN COFFEE
+  // =========================================================
+
+  static const Color cafePrincipal = Color(0xFF4E342E);
+  static const Color cafeClaro = Color(0xFF795548);
+  static const Color crema = Color(0xFFF5EFE6);
+  static const Color cremaClaro = Color(0xFFFFFCF7);
+  static const Color dorado = Color(0xFFC8A45D);
+  static const Color textoOscuro = Color(0xFF3A2925);
+  static const Color textoSuave = Color(0xFF756860);
+
+  // =========================================================
   // REGISTRARSE
   // =========================================================
 
   void registrarse() {
-    String nombre = nombreController.text.trim();
-    String correo = correoController.text.trim();
-    String direccion = direccionController.text.trim();
-    String telefono = telefonoController.text.trim();
-    String clave = claveController.text.trim();
+    String nombre =
+    nombreController.text.trim();
 
-    // Verificar campos
+    String correo =
+    correoController.text.trim();
+
+    String direccion =
+    direccionController.text.trim();
+
+    String telefono =
+    telefonoController.text.trim();
+
+    String clave =
+    claveController.text.trim();
+
+    // =======================================================
+    // VERIFICAR CAMPOS
+    // =======================================================
+
     if (nombre.isEmpty ||
         correo.isEmpty ||
         direccion.isEmpty ||
@@ -45,8 +73,12 @@ class _RegistroPageState extends State<RegistroPage> {
         clave.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
+          backgroundColor: cafePrincipal,
           content: Text(
             'Por favor, completa todos los campos',
+            style: TextStyle(
+              color: Colors.white,
+            ),
           ),
         ),
       );
@@ -54,283 +86,405 @@ class _RegistroPageState extends State<RegistroPage> {
       return;
     }
 
-    // Registro exitoso
+    // =======================================================
+    // REGISTRO EXITOSO
+    // =======================================================
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
+        backgroundColor: cafePrincipal,
         content: Text(
           'Registro realizado correctamente',
+          style: TextStyle(
+            color: Colors.white,
+          ),
         ),
       ),
     );
 
-    // =========================================================
-    // VOLVER AL INICIO DE SESIÓN
-    // =========================================================
+    // =======================================================
+    // VOLVER AL LOGIN
+    // =======================================================
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const LoginPage(),
+        builder: (context) =>
+        const LoginPage(),
       ),
     );
   }
 
+  // =========================================================
+  // BUILD
+  // =========================================================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: crema,
 
-      body: SafeArea(
-        child: Column(
-          children: [
+      // =======================================================
+      // APP BAR
+      // =======================================================
 
-            // =================================================
-            // ENCABEZADO
-            // =================================================
+      appBar: AppBar(
+        backgroundColor: cafePrincipal,
+        elevation: 0,
 
-            Container(
-              width: double.infinity,
-              height: 45,
+        // FLECHA → LOGIN
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+          ),
 
-              color: const Color(0xFF9E0000),
-
-              child: const Center(
-                child: Text(
-                  'Registro',
-
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                const LoginPage(),
               ),
-            ),
-
-            // =================================================
-            // CAMPOS
-            // =================================================
-
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-
-                    const SizedBox(height: 12),
-
-                    // NOMBRE
-                    _campoTexto(
-                      controller: nombreController,
-                      hintText: 'Escriba su nombre',
-                      icono: Icons.person,
-                      tipo: TextInputType.name,
-                    ),
-
-                    const SizedBox(height: 7),
-
-                    // CORREO
-                    _campoTexto(
-                      controller: correoController,
-                      hintText: 'Correo',
-                      icono: Icons.email,
-                      tipo: TextInputType.emailAddress,
-                    ),
-
-                    const SizedBox(height: 7),
-
-                    // DIRECCIÓN
-                    _campoTexto(
-                      controller: direccionController,
-                      hintText: 'Dirección',
-                      icono: Icons.location_on,
-                      tipo: TextInputType.streetAddress,
-                    ),
-
-                    const SizedBox(height: 7),
-
-                    // TELÉFONO
-                    _campoTexto(
-                      controller: telefonoController,
-                      hintText: 'Teléfono',
-                      icono: Icons.phone,
-                      tipo: TextInputType.phone,
-                    ),
-
-                    const SizedBox(height: 7),
-
-                    // =================================================
-                    // CONTRASEÑA
-                    // =================================================
-
-                    Padding(
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 0),
-
-                      child: SizedBox(
-                        height: 38,
-
-                        child: TextField(
-                          controller: claveController,
-
-                          obscureText: ocultarClave,
-
-                          textAlign: TextAlign.left,
-
-                          decoration: InputDecoration(
-                            hintText: 'Contraseña',
-
-                            hintStyle: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-
-                            prefixIcon: const Icon(
-                              Icons.lock,
-                              size: 18,
-                              color: Color(0xFF8B8B8B),
-                            ),
-
-                            suffixIcon: IconButton(
-                              padding: EdgeInsets.zero,
-
-                              icon: Icon(
-                                ocultarClave
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-
-                                size: 18,
-                              ),
-
-                              onPressed: () {
-                                setState(() {
-                                  ocultarClave =
-                                  !ocultarClave;
-                                });
-                              },
-                            ),
-
-                            filled: true,
-
-                            fillColor:
-                            const Color(0xFFE8E8E8),
-
-                            border: InputBorder.none,
-
-                            contentPadding:
-                            const EdgeInsets.symmetric(
-                              vertical: 8,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // =================================================
-                    // BOTÓN REGISTRARSE
-                    // =================================================
-
-                    SizedBox(
-                      width: 135,
-                      height: 42,
-
-                      child: ElevatedButton(
-                        onPressed: registrarse,
-
-                        style:
-                        ElevatedButton.styleFrom(
-                          backgroundColor:
-                          const Color(0xFF9E0000),
-
-                          foregroundColor:
-                          Colors.white,
-
-                          elevation: 0,
-
-                          shape:
-                          RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(2),
-                          ),
-
-                          padding: EdgeInsets.zero,
-                        ),
-
-                        child: const Text(
-                          'Registrarse',
-
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         ),
-      ),
 
-      // =========================================================
-      // BARRA INFERIOR
-      // =========================================================
+        title: const Text(
+          'BUITRÓN COFFEE',
 
-      bottomNavigationBar: Container(
-        height: 50,
-
-        decoration: const BoxDecoration(
-          color: Colors.white,
-
-          border: Border(
-            top: BorderSide(
-              color: Color(0xFF777777),
-              width: 1,
-            ),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
           ),
         ),
 
-        child: Row(
-          mainAxisAlignment:
-          MainAxisAlignment.spaceAround,
+        centerTitle: true,
+      ),
 
-          children: [
+      // =======================================================
+      // CUERPO
+      // =======================================================
 
-            IconButton(
-              onPressed: () {},
-
-              icon: const Icon(
-                Icons.location_on_outlined,
-                color: Color(0xFF777777),
-                size: 25,
-              ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 25,
             ),
 
-            IconButton(
-              onPressed: () {},
+            child: Column(
+              children: [
 
-              icon: const Icon(
-                Icons.home_outlined,
-                color: Color(0xFF777777),
-                size: 25,
-              ),
+                const SizedBox(height: 30),
+
+                // =================================================
+                // ICONO
+                // =================================================
+
+                Container(
+                  width: 105,
+                  height: 105,
+
+                  decoration: BoxDecoration(
+                    color: cremaClaro,
+                    shape: BoxShape.circle,
+
+                    border: Border.all(
+                      color: dorado,
+                      width: 3,
+                    ),
+
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black
+                            .withValues(alpha: 0.12),
+                        blurRadius: 10,
+                        offset:
+                        const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+
+                  child: const Icon(
+                    Icons.person_add_outlined,
+                    size: 55,
+                    color: cafePrincipal,
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                // =================================================
+                // TÍTULO
+                // =================================================
+
+                const Text(
+                  'CREAR CUENTA',
+
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: cafePrincipal,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+
+                const SizedBox(height: 7),
+
+                const Text(
+                  'Regístrate para disfrutar de Buitrón Coffee',
+
+                  textAlign: TextAlign.center,
+
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: textoSuave,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // =================================================
+                // NOMBRE
+                // =================================================
+
+                _campoTexto(
+                  controller: nombreController,
+                  labelText: 'Nombre',
+                  hintText: 'Escriba su nombre',
+                  icono: Icons.person_outline,
+                  tipo: TextInputType.name,
+                ),
+
+                const SizedBox(height: 16),
+
+                // =================================================
+                // CORREO
+                // =================================================
+
+                _campoTexto(
+                  controller: correoController,
+                  labelText: 'Correo electrónico',
+                  hintText: 'Correo',
+                  icono: Icons.email_outlined,
+                  tipo: TextInputType.emailAddress,
+                ),
+
+                const SizedBox(height: 16),
+
+                // =================================================
+                // DIRECCIÓN
+                // =================================================
+
+                _campoTexto(
+                  controller: direccionController,
+                  labelText: 'Dirección',
+                  hintText: 'Dirección',
+                  icono: Icons.location_on_outlined,
+                  tipo: TextInputType.streetAddress,
+                ),
+
+                const SizedBox(height: 16),
+
+                // =================================================
+                // TELÉFONO
+                // =================================================
+
+                _campoTexto(
+                  controller: telefonoController,
+                  labelText: 'Teléfono',
+                  hintText: 'Teléfono',
+                  icono: Icons.phone_outlined,
+                  tipo: TextInputType.phone,
+                ),
+
+                const SizedBox(height: 16),
+
+                // =================================================
+                // CONTRASEÑA
+                // =================================================
+
+                TextField(
+                  controller: claveController,
+
+                  obscureText: ocultarClave,
+
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+
+                    hintText: 'Ingrese una contraseña',
+
+                    labelStyle: const TextStyle(
+                      color: textoSuave,
+                    ),
+
+                    hintStyle: const TextStyle(
+                      color: textoSuave,
+                      fontSize: 14,
+                    ),
+
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                      color: cafePrincipal,
+                    ),
+
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        ocultarClave
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+
+                        color: cafeClaro,
+                      ),
+
+                      onPressed: () {
+                        setState(() {
+                          ocultarClave =
+                          !ocultarClave;
+                        });
+                      },
+                    ),
+
+                    filled: true,
+
+                    fillColor: cremaClaro,
+
+                    border: OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(10),
+
+                      borderSide:
+                      BorderSide.none,
+                    ),
+
+                    enabledBorder:
+                    OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(10),
+
+                      borderSide:
+                      BorderSide.none,
+                    ),
+
+                    focusedBorder:
+                    OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(10),
+
+                      borderSide:
+                      const BorderSide(
+                        color: dorado,
+                        width: 2,
+                      ),
+                    ),
+
+                    contentPadding:
+                    const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
+                  ),
+
+                  style: const TextStyle(
+                    color: textoOscuro,
+                    fontSize: 14,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // =================================================
+                // BOTÓN REGISTRARSE
+                // =================================================
+
+                SizedBox(
+                  width: 260,
+                  height: 50,
+
+                  child: ElevatedButton(
+                    onPressed: registrarse,
+
+                    style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor:
+                      cafePrincipal,
+
+                      foregroundColor:
+                      Colors.white,
+
+                      elevation: 2,
+
+                      shape:
+                      RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(10),
+                      ),
+                    ),
+
+                    child: const Text(
+                      'REGISTRARSE',
+
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight:
+                        FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // =================================================
+                // VOLVER AL LOGIN
+                // =================================================
+
+                Row(
+                  mainAxisAlignment:
+                  MainAxisAlignment.center,
+
+                  children: [
+
+                    const Text(
+                      '¿Ya tienes una cuenta?',
+
+                      style: TextStyle(
+                        color: textoSuave,
+                      ),
+                    ),
+
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                            const LoginPage(),
+                          ),
+                        );
+                      },
+
+                      child: const Text(
+                        'Iniciar sesión',
+
+                        style: TextStyle(
+                          color: cafePrincipal,
+                          fontWeight:
+                          FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 30),
+              ],
             ),
-
-            IconButton(
-              onPressed: () {},
-
-              icon: const Icon(
-                Icons.menu_book_outlined,
-                color: Color(0xFF777777),
-                size: 25,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -342,44 +496,76 @@ class _RegistroPageState extends State<RegistroPage> {
 
   Widget _campoTexto({
     required TextEditingController controller,
+    required String labelText,
     required String hintText,
     required IconData icono,
     required TextInputType tipo,
   }) {
-    return SizedBox(
-      height: 38,
+    return TextField(
+      controller: controller,
 
-      child: TextField(
-        controller: controller,
+      keyboardType: tipo,
 
-        keyboardType: tipo,
+      decoration: InputDecoration(
+        labelText: labelText,
 
-        decoration: InputDecoration(
-          hintText: hintText,
+        hintText: hintText,
 
-          hintStyle: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
+        labelStyle: const TextStyle(
+          color: textoSuave,
+        ),
 
-          prefixIcon: Icon(
-            icono,
-            size: 18,
-            color: const Color(0xFF777777),
-          ),
+        hintStyle: const TextStyle(
+          color: textoSuave,
+          fontSize: 14,
+        ),
 
-          filled: true,
+        prefixIcon: Icon(
+          icono,
+          color: cafePrincipal,
+        ),
 
-          fillColor:
-          const Color(0xFFE8E8E8),
+        filled: true,
 
-          border: InputBorder.none,
+        fillColor: cremaClaro,
 
-          contentPadding:
-          const EdgeInsets.symmetric(
-            vertical: 8,
+        border: OutlineInputBorder(
+          borderRadius:
+          BorderRadius.circular(10),
+
+          borderSide: BorderSide.none,
+        ),
+
+        enabledBorder:
+        OutlineInputBorder(
+          borderRadius:
+          BorderRadius.circular(10),
+
+          borderSide: BorderSide.none,
+        ),
+
+        focusedBorder:
+        OutlineInputBorder(
+          borderRadius:
+          BorderRadius.circular(10),
+
+          borderSide:
+          const BorderSide(
+            color: dorado,
+            width: 2,
           ),
         ),
+
+        contentPadding:
+        const EdgeInsets.symmetric(
+          horizontal: 15,
+          vertical: 15,
+        ),
+      ),
+
+      style: const TextStyle(
+        color: textoOscuro,
+        fontSize: 14,
       ),
     );
   }

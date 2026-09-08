@@ -3,6 +3,31 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+
+import '../models/producto.dart';
+import '../providers/carrito_provider.dart';
+
+import 'carrito_screen.dart';
+import 'historial_screen.dart';
+import 'login_screen.dart';
+import 'mapa_screen.dart';
+import 'pagos_screen.dart';
+import 'perfil_screen.dart';
+import 'resenas_screen.dart';
+import 'pqrs_screen.dart';
+
+// ============================================================
+// COLORES BUITRÓN COFFEE
+// ============================================================
+
+const Color cafePrincipal = Color(0xFF4E342E);
+const Color cafeClaro = Color(0xFF795548);
+const Color crema = Color(0xFFF5EFE6);
+const Color cremaClaro = Color(0xFFFFFCF7);
+const Color dorado = Color(0xFFC8A45D);
+const Color textoOscuro = Color(0xFF3A2925);
+const Color textoSuave = Color(0xFF756860);
 
 // ============================================================
 // CONFIGURACIÓN DE LA API
@@ -13,144 +38,125 @@ class ApiConfig {
 }
 
 // ============================================================
-// MODELO DE PRODUCTO
-// ============================================================
-
-class Producto {
-  final int id;
-  final String nombre;
-  final String descripcion;
-  final double precio;
-  final String imagen;
-
-  Producto({
-    required this.id,
-    required this.nombre,
-    required this.descripcion,
-    required this.precio,
-    required this.imagen,
-  });
-
-  factory Producto.fromJson(Map<String, dynamic> json) {
-    return Producto(
-      id: json['id'] is int
-          ? json['id']
-          : int.tryParse('${json['id']}') ?? 0,
-
-      nombre: json['nombre'] ?? '',
-
-      descripcion: json['descripcion'] ?? '',
-
-      precio: double.tryParse(
-        '${json['precio']}',
-      ) ??
-          0.0,
-
-      imagen: json['imagen'] ?? '',
-    );
-  }
-}
-
-// ============================================================
 // SERVICIO DE PRODUCTOS
 // ============================================================
 
 class ProductoService {
+  // ==========================================================
+  // OBTENER TODOS LOS PRODUCTOS
+  // ==========================================================
+
   static Future<List<Producto>> obtenerTodos() async {
     final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/productos'),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Error al cargar productos: ${response.statusCode}',
+      );
+    }
+
+    final dynamic data = jsonDecode(response.body);
+
+    if (data is! List) {
+      throw Exception(
+        'La respuesta de productos no es una lista',
+      );
+    }
+
+    return data
+        .map(
+          (item) => Producto.fromJson(
+        Map<String, dynamic>.from(item),
+      ),
+    )
+        .toList();
+  }
+
+  // ==========================================================
+  // BUSCAR PRODUCTOS
+  // ==========================================================
+
+  static Future<List<Producto>> buscar(String query) async {
+    final response = await http.get(
       Uri.parse(
-        '${ApiConfig.baseUrl}/productos',
+        '${ApiConfig.baseUrl}/productos/buscar?q=${Uri.encodeComponent(query)}',
       ),
     );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data =
-      jsonDecode(response.body);
-
-      return data
-          .map(
-            (json) => Producto.fromJson(json),
-      )
-          .toList();
-    } else {
+    if (response.statusCode != 200) {
       throw Exception(
-        'Error al cargar productos (${response.statusCode})',
+        'Error al buscar productos: ${response.statusCode}',
       );
     }
-  }
 
-  static Future<List<Producto>> buscar(
-      String query,
-      ) async {
-    final uri = Uri.parse(
-      '${ApiConfig.baseUrl}/productos/buscar',
-    ).replace(
-      queryParameters: {
-        'q': query,
-      },
-    );
+    final dynamic data = jsonDecode(response.body);
 
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data =
-      jsonDecode(response.body);
-
-      return data
-          .map(
-            (json) => Producto.fromJson(json),
-      )
-          .toList();
-    } else {
+    if (data is! List) {
       throw Exception(
-        'Error al buscar productos (${response.statusCode})',
+        'La respuesta de búsqueda no es una lista',
       );
     }
+
+    return data
+        .map(
+          (item) => Producto.fromJson(
+        Map<String, dynamic>.from(item),
+      ),
+    )
+        .toList();
   }
 }
 
 // ============================================================
-// PANTALLA DEL CATÁLOGO
+// CATÁLOGO
 // ============================================================
 
 class CatalogoScreen extends StatefulWidget {
-  const CatalogoScreen({
-    super.key,
-  });
+  const CatalogoScreen({super.key});
 
   @override
-  State<CatalogoScreen> createState() =>
-      _CatalogoScreenState();
+  State<CatalogoScreen> createState() => _CatalogoScreenState();
 }
 
-class _CatalogoScreenState
-    extends State<CatalogoScreen> {
+// ============================================================
+// ESTADO DEL CATÁLOGO
+// ============================================================
 
-  final TextEditingController _buscadorController =
+class _CatalogoScreenState extends State<CatalogoScreen> {
+  final TextEditingController _buscarController =
   TextEditingController();
-
-  List<Producto> _productos = [];
-
-  bool _cargando = true;
-
-  String? _error;
 
   Timer? _debounce;
 
-  int _navIndex = 1;
+  List<Producto> _productos = [];
+  List<Producto> _productosFiltrados = [];
 
-  static const Color rojo =
-  Color(0xFF8B1E1E);
+  bool _cargando = true;
+  String _error = '';
+
+  String _categoriaSeleccionada = 'Todos';
 
   // ==========================================================
-  // INICIO
+  // INIT
   // ==========================================================
 
   @override
   void initState() {
     super.initState();
-
     _cargarProductos();
+  }
+
+  // ==========================================================
+  // DISPOSE
+  // ==========================================================
+
+  @override
+  void dispose() {
+    _buscarController.dispose();
+    _debounce?.cancel();
+    super.dispose();
   }
 
   // ==========================================================
@@ -160,426 +166,768 @@ class _CatalogoScreenState
   Future<void> _cargarProductos() async {
     setState(() {
       _cargando = true;
-      _error = null;
+      _error = '';
     });
 
     try {
-      final productos =
-      await ProductoService.obtenerTodos();
+      final productos = await ProductoService.obtenerTodos();
+
+      if (!mounted) return;
 
       setState(() {
         _productos = productos;
+        _productosFiltrados = productos;
         _cargando = false;
       });
-    } catch (e) {
-      setState(() {
-        _error =
-        'No se pudo conectar con el servidor.';
 
+      _filtrarProductos();
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
         _cargando = false;
+        _error = 'No se pudieron cargar los productos';
       });
     }
   }
 
   // ==========================================================
-  // BUSCADOR
+  // BUSCAR
   // ==========================================================
 
   void _onBuscar(String texto) {
-    if (_debounce?.isActive ?? false) {
-      _debounce!.cancel();
-    }
+    setState(() {});
+
+    _debounce?.cancel();
 
     _debounce = Timer(
-      const Duration(
-        milliseconds: 400,
-      ),
-          () async {
-        await _buscarTexto(texto);
+      const Duration(milliseconds: 350),
+          () {
+        _buscarTexto(texto);
       },
     );
   }
 
-  Future<void> _buscarTexto(
-      String texto,
-      ) async {
+  void _buscarTexto(String texto) {
+    _filtrarProductos();
+  }
 
-    if (texto.trim().isEmpty) {
-      await _cargarProductos();
-      return;
+  // ==========================================================
+  // FILTRAR PRODUCTOS
+  // ==========================================================
+
+  void _filtrarProductos() {
+    final texto = _buscarController.text.trim().toLowerCase();
+
+    List<Producto> resultado = List.from(_productos);
+
+    // ----------------------------------------------------------
+    // FILTRO POR TEXTO
+    // ----------------------------------------------------------
+
+    if (texto.isNotEmpty) {
+      resultado = resultado.where((producto) {
+        return producto.nombre.toLowerCase().contains(texto) ||
+            (producto.descripcion ?? '')
+                .toLowerCase()
+                .contains(texto);
+      }).toList();
     }
+
+    // ----------------------------------------------------------
+    // FILTRO POR CATEGORÍA
+    // ----------------------------------------------------------
+
+    if (_categoriaSeleccionada != 'Todos') {
+      resultado = resultado.where((producto) {
+        return producto.categoria.toLowerCase() ==
+            _categoriaSeleccionada.toLowerCase();
+      }).toList();
+    }
+
+    if (!mounted) return;
 
     setState(() {
-      _cargando = true;
-      _error = null;
+      _productosFiltrados = resultado;
     });
+  }
 
-    try {
-      final resultados =
-      await ProductoService.buscar(texto);
+  // ==========================================================
+  // IMAGEN LOCAL DEL PRODUCTO
+  // ==========================================================
 
-      setState(() {
-        _productos = resultados;
-        _cargando = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error =
-        'No se pudo conectar con el servidor.';
+  String _imagenLocal(Producto producto) {
+    final nombre = producto.nombre.toLowerCase().trim();
 
-        _cargando = false;
-      });
+    // ----------------------------------------------------------
+    // CAFÉ 1
+    // ----------------------------------------------------------
+
+    if (nombre.contains('tostado') ||
+        nombre.contains('tradicional') ||
+        nombre.contains('cafe 1') ||
+        nombre.contains('café 1')) {
+      return 'assets/cafe1.png';
     }
+
+    // ----------------------------------------------------------
+    // CAFÉ 2
+    // ----------------------------------------------------------
+
+    if (nombre.contains('geisha') ||
+        nombre.contains('especial') ||
+        nombre.contains('cafe 2') ||
+        nombre.contains('café 2')) {
+      return 'assets/cafe2.png';
+    }
+
+    // ----------------------------------------------------------
+    // CAFÉ 3
+    // ----------------------------------------------------------
+
+    if (nombre.contains('bourbon') ||
+        nombre.contains('premium') ||
+        nombre.contains('cafe 3') ||
+        nombre.contains('café 3')) {
+      return 'assets/cafe3.png';
+    }
+
+    // ----------------------------------------------------------
+    // RESPALDO POR ID
+    // ----------------------------------------------------------
+
+    if (producto.id == 1) {
+      return 'assets/cafe1.png';
+    }
+
+    if (producto.id == 2) {
+      return 'assets/cafe2.png';
+    }
+
+    if (producto.id == 3) {
+      return 'assets/cafe3.png';
+    }
+
+    return 'assets/cafe1.png';
   }
 
   // ==========================================================
-  // SELECCIONAR CATEGORÍA
+  // AGREGAR AL CARRITO
   // ==========================================================
 
-  void _seleccionarCategoria(
-      String categoria,
-      ) {
-    _buscadorController.text =
-        categoria;
+  void _agregarAlCarrito(Producto producto) {
+    context.read<CarritoProvider>().agregarProducto(producto);
 
-    _buscadorController.selection =
-        TextSelection.fromPosition(
-          TextPosition(
-            offset:
-            _buscadorController.text.length,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: cafePrincipal,
+        content: Text(
+          '${producto.nombre} agregado al carrito',
+          style: const TextStyle(
+            color: Colors.white,
           ),
-        );
-
-    _buscarTexto(categoria);
+        ),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'VER',
+          textColor: dorado,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CarritoScreen(),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   // ==========================================================
-  // LIBERAR CONTROLADORES
+  // NAVEGACIÓN
   // ==========================================================
 
-  @override
-  void dispose() {
-    _buscadorController.dispose();
+  void _irA(Widget pantalla) {
+    Navigator.pop(context);
 
-    _debounce?.cancel();
-
-    super.dispose();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => pantalla,
+      ),
+    );
   }
 
   // ==========================================================
-  // INTERFAZ
+  // DRAWER
+  // ==========================================================
+
+  Widget _crearDrawer() {
+    return Drawer(
+      width: MediaQuery.of(context).size.width * 0.78,
+      backgroundColor: cremaClaro,
+      child: Column(
+        children: [
+          // ==================================================
+          // CABECERA
+          // ==================================================
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(
+              top: 55,
+              bottom: 30,
+              left: 25,
+              right: 25,
+            ),
+            decoration: const BoxDecoration(
+              color: cafePrincipal,
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.coffee,
+                  color: dorado,
+                  size: 42,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'BUITRÓN COFFEE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'Café colombiano',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ==================================================
+          // OPCIONES
+          // ==================================================
+
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                // ------------------------------------------------
+                // CATÁLOGO
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.storefront,
+                    color: cafePrincipal,
+                  ),
+                  title: const Text(
+                    'Catálogo',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+
+                // ------------------------------------------------
+                // CARRITO
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.shopping_cart,
+                    color: cafePrincipal,
+                  ),
+                  title: const Text(
+                    'Carrito',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    _irA(const CarritoScreen());
+                  },
+                ),
+
+                // ------------------------------------------------
+                // PERFIL
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.person,
+                    color: cafePrincipal,
+                  ),
+                  title: const Text(
+                    'Mi perfil',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    _irA(const PerfilScreen());
+                  },
+                ),
+
+                // ------------------------------------------------
+                // HISTORIAL
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.history,
+                    color: cafePrincipal,
+                  ),
+                  title: const Text(
+                    'Historial de compras',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    _irA(const HistorialScreen());
+                  },
+                ),
+
+                // ------------------------------------------------
+                // UBICACIÓN
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.location_on,
+                    color: cafePrincipal,
+                  ),
+                  title: const Text(
+                    'Ubicación',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    _irA(const MapaScreen());
+                  },
+                ),
+
+                // ------------------------------------------------
+                // PAGOS
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.payment,
+                    color: cafePrincipal,
+                  ),
+                  title: const Text(
+                    'Pagos',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    _irA(const PagosScreen());
+                  },
+                ),
+
+                // ------------------------------------------------
+                // RESEÑAS
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.star,
+                    color: dorado,
+                  ),
+                  title: const Text(
+                    'Reseñas',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    _irA(const ResenasScreen());
+                  },
+                ),
+
+                // ------------------------------------------------
+                // PQRS
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.help_outline,
+                    color: cafePrincipal,
+                  ),
+                  title: const Text(
+                    'PQRS',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    _irA(const PqrsScreen());
+                  },
+                ),
+
+                const Divider(
+                  color: cafeClaro,
+                ),
+
+                // ------------------------------------------------
+                // ACERCA DE
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.info_outline,
+                    color: cafePrincipal,
+                  ),
+                  title: const Text(
+                    'Acerca de',
+                    style: TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+
+                    showAboutDialog(
+                      context: context,
+                      applicationName: 'Buitrón Coffee',
+                      applicationVersion: '1.0.0',
+                      applicationIcon: const Icon(
+                        Icons.coffee,
+                        color: cafePrincipal,
+                      ),
+                      children: const [
+                        Text(
+                          'Aplicación para la venta de café colombiano.',
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                // ------------------------------------------------
+                // CERRAR SESIÓN
+                // ------------------------------------------------
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.logout,
+                    color: cafeClaro,
+                  ),
+                  title: const Text(
+                    'Cerrar sesión',
+                    style: TextStyle(
+                      color: cafeClaro,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LoginPage(),
+                      ),
+                          (route) => false,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // BUILD
   // ==========================================================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: crema,
 
       // ======================================================
-      // MENÚ LATERAL
+      // DRAWER
       // ======================================================
 
-      drawer: _construirMenuLateral(),
+      drawer: _crearDrawer(),
 
       // ======================================================
-      // BARRA SUPERIOR
+      // APP BAR
       // ======================================================
 
       appBar: AppBar(
-        backgroundColor: rojo,
-
+        backgroundColor: cafePrincipal,
+        foregroundColor: Colors.white,
+        elevation: 0,
         centerTitle: true,
 
-        elevation: 0,
-
         title: const Text(
-          'CATALOGO',
-
+          'CATÁLOGO',
           style: TextStyle(
+            color: Colors.white,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+            letterSpacing: 1,
           ),
         ),
+
+        actions: [
+          Consumer<CarritoProvider>(
+            builder: (context, carrito, child) {
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 27,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CarritoScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // ------------------------------------------------
+                  // CONTADOR DEL CARRITO
+                  // ------------------------------------------------
+
+                  if (carrito.cantidadTotal > 0)
+                    Positioned(
+                      right: 2,
+                      top: 3,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(
+                          color: dorado,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${carrito.cantidadTotal}',
+                          style: const TextStyle(
+                            color: textoOscuro,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
 
       // ======================================================
-      // CONTENIDO
+      // BODY
       // ======================================================
 
       body: Column(
         children: [
+          // ====================================================
+          // BUSCADOR
+          // ====================================================
 
-          const SizedBox(
-            height: 16,
-          ),
-
-          _construirBotonesCategoria(),
-
-          const SizedBox(
-            height: 20,
-          ),
-
-          _construirBuscador(),
-
-          Expanded(
-            child:
-            _construirContenido(),
-          ),
-        ],
-      ),
-
-      // ======================================================
-      // BARRA INFERIOR
-      // ======================================================
-
-      bottomNavigationBar:
-      _construirBottomNav(),
-    );
-  }
-
-  // ==========================================================
-  // MENÚ LATERAL
-  // ==========================================================
-
-  Widget _construirMenuLateral() {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-
-        children: [
-
-          // ==================================================
-          // ENCABEZADO
-          // ==================================================
-
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: rojo,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              14,
+              15,
+              14,
+              8,
             ),
+            child: TextField(
+              controller: _buscarController,
+              onChanged: _onBuscar,
 
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-
-              children: const [
-
-                Icon(
-                  Icons.local_cafe,
-                  color: Colors.white,
-                  size: 48,
+              decoration: InputDecoration(
+                hintText: 'Buscar café...',
+                hintStyle: const TextStyle(
+                  color: textoSuave,
                 ),
 
-                SizedBox(
-                  height: 10,
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: cafePrincipal,
                 ),
 
-                Text(
-                  'BUITRON COFFEE',
+                suffixIcon:
+                _buscarController.text.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(
+                    Icons.clear,
+                    color: cafePrincipal,
+                  ),
+                  onPressed: () {
+                    _buscarController.clear();
+                    _filtrarProductos();
 
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight:
-                    FontWeight.bold,
+                    setState(() {});
+                  },
+                )
+                    : null,
+
+                filled: true,
+                fillColor: cremaClaro,
+
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: cafePrincipal,
+                    width: 1.5,
                   ),
                 ),
+              ),
+            ),
+          ),
 
-                SizedBox(
-                  height: 5,
+          // ====================================================
+          // CATEGORÍAS
+          // ====================================================
+
+          SizedBox(
+            height: 50,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+              ),
+              children: [
+                _categoria(
+                  'Todos',
+                  _categoriaSeleccionada == 'Todos',
                 ),
-
-                Text(
-                  'Menú principal',
-
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
+                _categoria(
+                  'Molido',
+                  _categoriaSeleccionada == 'Molido',
+                ),
+                _categoria(
+                  'Grano',
+                  _categoriaSeleccionada == 'Grano',
                 ),
               ],
             ),
           ),
 
-          // ==================================================
-          // CATÁLOGO
-          // ==================================================
+          // ====================================================
+          // CONTENIDO
+          // ====================================================
 
-          ListTile(
-            leading: const Icon(
-              Icons.home_outlined,
-              color: rojo,
-            ),
-
-            title: const Text(
-              'Catálogo',
-            ),
-
-            onTap: () {
-              Navigator.pop(
-                context,
-              );
-            },
-          ),
-
-          // ==================================================
-          // PERFIL
-          // ==================================================
-
-          ListTile(
-            leading: const Icon(
-              Icons.person_outline,
-              color: rojo,
-            ),
-
-            title: const Text(
-              'Mi perfil',
-            ),
-
-            onTap: () {
-              Navigator.pop(
-                context,
-              );
-
-              _mostrarMensaje(
-                'Vista de perfil',
-              );
-            },
-          ),
-
-          // ==================================================
-          // CARRITO
-          // ==================================================
-
-          ListTile(
-            leading: const Icon(
-              Icons.shopping_cart_outlined,
-              color: rojo,
-            ),
-
-            title: const Text(
-              'Carrito',
-            ),
-
-            onTap: () {
-              Navigator.pop(
-                context,
-              );
-
-              _mostrarMensaje(
-                'Vista del carrito',
-              );
-            },
-          ),
-
-          // ==================================================
-          // HISTORIAL
-          // ==================================================
-
-          ListTile(
-            leading: const Icon(
-              Icons.history,
-              color: rojo,
-            ),
-
-            title: const Text(
-              'Historial de compras',
-            ),
-
-            onTap: () {
-              Navigator.pop(
-                context,
-              );
-
-              _mostrarMensaje(
-                'Historial de compras',
-              );
-            },
-          ),
-
-          // ==================================================
-          // MAPA
-          // ==================================================
-
-          ListTile(
-            leading: const Icon(
-              Icons.location_on_outlined,
-              color: rojo,
-            ),
-
-            title: const Text(
-              'Ubicación',
-            ),
-
-            onTap: () {
-              Navigator.pop(
-                context,
-              );
-
-              _mostrarMensaje(
-                'Vista de ubicación',
-              );
-            },
-          ),
-
-          // ==================================================
-          // PAGOS
-          // ==================================================
-
-          ListTile(
-            leading: const Icon(
-              Icons.payment_outlined,
-              color: rojo,
-            ),
-
-            title: const Text(
-              'Métodos de pago',
-            ),
-
-            onTap: () {
-              Navigator.pop(
-                context,
-              );
-
-              _mostrarMensaje(
-                'Vista de métodos de pago',
-              );
-            },
-          ),
-
-          const Divider(),
-
-          // ==================================================
-          // CERRAR SESIÓN
-          // ==================================================
-
-          ListTile(
-            leading: const Icon(
-              Icons.logout,
-              color: Colors.red,
-            ),
-
-            title: const Text(
-              'Cerrar sesión',
-
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight:
-                FontWeight.bold,
+          Expanded(
+            child: _cargando
+                ? const Center(
+              child: CircularProgressIndicator(
+                color: cafePrincipal,
               ),
+            )
+                : _error.isNotEmpty
+                ? Center(
+              child: Column(
+                mainAxisAlignment:
+                MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 50,
+                    color: cafeClaro,
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Text(
+                    _error,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: textoOscuro,
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  ElevatedButton(
+                    onPressed: _cargarProductos,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                      cafePrincipal,
+                      foregroundColor:
+                      Colors.white,
+                    ),
+                    child: const Text(
+                      'REINTENTAR',
+                    ),
+                  ),
+                ],
+              ),
+            )
+                : _productosFiltrados.isEmpty
+                ? const Center(
+              child: Text(
+                'No se encontraron productos',
+                style: TextStyle(
+                  color: textoSuave,
+                  fontSize: 16,
+                ),
+              ),
+            )
+                : GridView.builder(
+              padding:
+              const EdgeInsets.all(14),
+
+              gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 14,
+                childAspectRatio: 0.68,
+              ),
+
+              itemCount:
+              _productosFiltrados.length,
+
+              itemBuilder:
+                  (context, index) {
+                final producto =
+                _productosFiltrados[index];
+
+                return ProductoCard(
+                  producto: producto,
+                  imagenLocal:
+                  _imagenLocal(producto),
+                  onAgregar: () {
+                    _agregarAlCarrito(
+                      producto,
+                    );
+                  },
+                );
+              },
             ),
-
-            onTap: () {
-              Navigator.pop(
-                context,
-              );
-
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/',
-                    (route) => false,
-              );
-            },
           ),
         ],
       ),
@@ -587,646 +935,268 @@ class _CatalogoScreenState
   }
 
   // ==========================================================
-  // MENSAJE TEMPORAL
+  // BOTÓN DE CATEGORÍA
   // ==========================================================
 
-  void _mostrarMensaje(
-      String mensaje,
+  Widget _categoria(
+      String nombre,
+      bool seleccionado,
       ) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(
-        content: Text(
-          mensaje,
-        ),
-      ),
-    );
-  }
-
-  // ==========================================================
-  // BOTONES DE CATEGORÍA
-  // ==========================================================
-
-  Widget _construirBotonesCategoria() {
-    return Row(
-      mainAxisAlignment:
-      MainAxisAlignment.center,
-
-      children: [
-
-        _CategoriaBoton(
-          texto: 'Molido',
-
-          imagenAsset: null,
-
-          icono: Icons.coffee,
-
-          onTap: () =>
-              _seleccionarCategoria(
-                'Molido',
-              ),
-        ),
-
-        const SizedBox(
-          width: 24,
-        ),
-
-        _CategoriaBoton(
-          texto: 'Grano',
-
-          imagenAsset: null,
-
-          icono: Icons.grain,
-
-          onTap: () =>
-              _seleccionarCategoria(
-                'Grano',
-              ),
-        ),
-      ],
-    );
-  }
-
-  // ==========================================================
-  // BUSCADOR
-  // ==========================================================
-
-  Widget _construirBuscador() {
     return Padding(
-      padding:
-      const EdgeInsets.symmetric(
-        horizontal: 16,
+      padding: const EdgeInsets.only(
+        right: 8,
+        top: 5,
+        bottom: 5,
       ),
+      child: ChoiceChip(
+        label: Text(nombre),
 
-      child: TextField(
-        controller:
-        _buscadorController,
+        selected: seleccionado,
 
-        onChanged: _onBuscar,
+        selectedColor: cafePrincipal,
 
-        decoration:
-        InputDecoration(
-          hintText: 'Buscar producto',
+        backgroundColor: cremaClaro,
 
-          filled: true,
-
-          fillColor:
-          const Color(0xFFF6EAE8),
-
-          suffixIcon:
-          const Icon(
-            Icons.search,
-            color: Colors.black54,
-          ),
-
-          contentPadding:
-          const EdgeInsets.symmetric(
-            vertical: 0,
-          ),
-
-          border:
-          OutlineInputBorder(
-            borderRadius:
-            BorderRadius.circular(
-              24,
-            ),
-
-            borderSide:
-            BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ==========================================================
-  // CONTENIDO
-  // ==========================================================
-
-  Widget _construirContenido() {
-
-    if (_cargando) {
-      return const Center(
-        child:
-        CircularProgressIndicator(),
-      );
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize:
-          MainAxisSize.min,
-
-          children: [
-
-            Text(
-              _error!,
-
-              style:
-              const TextStyle(
-                color: Colors.red,
-              ),
-            ),
-
-            const SizedBox(
-              height: 8,
-            ),
-
-            ElevatedButton(
-              onPressed:
-              _cargarProductos,
-
-              child:
-              const Text(
-                'Reintentar',
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_productos.isEmpty) {
-      return const Center(
-        child: Text(
-          'No se encontraron productos',
-
-          style: TextStyle(
-            color: Colors.grey,
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding:
-      const EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        12,
-      ),
-
-      itemCount:
-      _productos.length,
-
-      itemBuilder:
-          (context, index) {
-
-        return ProductoCard(
-          producto:
-          _productos[index],
-        );
-      },
-    );
-  }
-
-  // ==========================================================
-  // BARRA INFERIOR
-  // ==========================================================
-
-  Widget _construirBottomNav() {
-    return BottomNavigationBar(
-
-      currentIndex:
-      _navIndex,
-
-      onTap: (i) {
-        setState(() {
-          _navIndex = i;
-        });
-      },
-
-      type:
-      BottomNavigationBarType.fixed,
-
-      selectedItemColor:
-      rojo,
-
-      unselectedItemColor:
-      Colors.black54,
-
-      showSelectedLabels:
-      false,
-
-      showUnselectedLabels:
-      false,
-
-      items: const [
-
-        BottomNavigationBarItem(
-          icon:
-          Icon(
-            Icons.person_outline,
-          ),
-          label: 'Perfil',
+        side: BorderSide(
+          color: seleccionado
+              ? cafePrincipal
+              : cafeClaro,
         ),
 
-        BottomNavigationBarItem(
-          icon:
-          Icon(
-            Icons.home_outlined,
-          ),
-          label: 'Inicio',
+        labelStyle: TextStyle(
+          color: seleccionado
+              ? Colors.white
+              : textoOscuro,
+          fontWeight: FontWeight.w600,
         ),
 
-        BottomNavigationBarItem(
-          icon:
-          Icon(
-            Icons.shopping_cart_outlined,
-          ),
-          label: 'Carrito',
-        ),
-      ],
-    );
-  }
-}
+        onSelected: (_) {
+          setState(() {
+            _categoriaSeleccionada = nombre;
+          });
 
-// ============================================================
-// BOTÓN DE CATEGORÍA
-// ============================================================
-
-class _CategoriaBoton
-    extends StatelessWidget {
-
-  final String texto;
-
-  final String? imagenAsset;
-
-  final IconData icono;
-
-  final VoidCallback onTap;
-
-  const _CategoriaBoton({
-    required this.texto,
-    required this.imagenAsset,
-    required this.icono,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(
-      BuildContext context,
-      ) {
-    return GestureDetector(
-
-      onTap: onTap,
-
-      child: Column(
-        mainAxisSize:
-        MainAxisSize.min,
-
-        children: [
-
-          CircleAvatar(
-            radius: 32,
-
-            backgroundColor:
-            const Color(
-              0xFFF6EAE8,
-            ),
-
-            backgroundImage:
-            imagenAsset != null
-                ? AssetImage(
-              imagenAsset!,
-            )
-                : null,
-
-            child:
-            imagenAsset == null
-                ? Icon(
-              icono,
-
-              color:
-              const Color(
-                0xFF8B1E1E,
-              ),
-
-              size: 28,
-            )
-                : null,
-          ),
-
-          const SizedBox(
-            height: 8,
-          ),
-
-          Text(
-            texto,
-
-            style:
-            const TextStyle(
-              fontSize: 14,
-              fontWeight:
-              FontWeight.w600,
-            ),
-          ),
-        ],
+          _filtrarProductos();
+        },
       ),
     );
   }
 }
 
 // ============================================================
-// TARJETA DE PRODUCTO
+// PRODUCT CARD
 // ============================================================
 
-class ProductoCard
-    extends StatelessWidget {
-
+class ProductoCard extends StatelessWidget {
   final Producto producto;
+  final String imagenLocal;
+  final VoidCallback onAgregar;
 
   const ProductoCard({
     super.key,
     required this.producto,
+    required this.imagenLocal,
+    required this.onAgregar,
   });
 
-  // ==========================================================
-  // FORMATO DEL PRECIO
-  // ==========================================================
-
-  String _formatearPrecio(
-      double precio,
-      ) {
-    final texto =
-    precio.toStringAsFixed(0);
-
-    final buffer =
-    StringBuffer();
-
-    for (
-    int i = 0;
-    i < texto.length;
-    i++
-    ) {
-      final posicionDesdeFinal =
-          texto.length - i;
-
-      buffer.write(
-        texto[i],
-      );
-
-      if (
-      posicionDesdeFinal > 1 &&
-          posicionDesdeFinal % 3 == 1) {
-        buffer.write('.');
-      }
-    }
-
-    return '\$$buffer';
-  }
-
-  // ==========================================================
-  // TARJETA
-  // ==========================================================
-
   @override
-  Widget build(
-      BuildContext context,
-      ) {
-    return Padding(
+  Widget build(BuildContext context) {
+    return Card(
+      color: cremaClaro,
+      elevation: 3,
+      margin: EdgeInsets.zero,
 
-      padding:
-      const EdgeInsets.only(
-        bottom: 16,
+      shadowColor: Colors.black.withValues(
+        alpha: 0.10,
       ),
 
-      child: Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
 
-        children: [
+      child: Padding(
+        padding: const EdgeInsets.all(10),
 
-          // ==================================================
-          // IMAGEN
-          // ==================================================
+        child: Column(
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
 
-          ClipRRect(
-            borderRadius:
-            BorderRadius.circular(
-              8,
-            ),
+          children: [
+            // =================================================
+            // IMAGEN
+            // =================================================
 
-            child:
-            producto.imagen.isNotEmpty
-                ? Image.network(
-              producto.imagen,
+            Expanded(
+              flex: 5,
+              child: Container(
+                width: double.infinity,
 
-              width: 60,
-              height: 78,
-
-              fit:
-              BoxFit.cover,
-
-              loadingBuilder:
-                  (
-                  context,
-                  child,
-                  progress,
-                  ) {
-                if (progress ==
-                    null) {
-                  return child;
-                }
-
-                return const SizedBox(
-                  width: 60,
-                  height: 78,
-
-                  child: Center(
-                    child:
-                    CircularProgressIndicator(
-                      strokeWidth:
-                      2,
-                    ),
-                  ),
-                );
-              },
-
-              errorBuilder:
-                  (
-                  context,
-                  error,
-                  stackTrace,
-                  ) {
-                return Container(
-                  width: 60,
-                  height: 78,
-
-                  color:
-                  Colors.grey[300],
-
-                  child:
-                  const Icon(
-                    Icons.coffee,
-
-                    color:
-                    Colors.brown,
-
-                    size: 28,
-                  ),
-                );
-              },
-            )
-                : Container(
-              width: 60,
-              height: 78,
-
-              color:
-              Colors.grey[300],
-
-              child:
-              const Icon(
-                Icons.coffee,
-
-                color:
-                Colors.brown,
-
-                size: 28,
-              ),
-            ),
-          ),
-
-          const SizedBox(
-            width: 14,
-          ),
-
-          // ==================================================
-          // INFORMACIÓN
-          // ==================================================
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-
-              children: [
-
-                Text(
-                  producto.nombre,
-
-                  style:
-                  const TextStyle(
-                    fontWeight:
-                    FontWeight.bold,
-
-                    fontSize: 15,
-                  ),
+                decoration: BoxDecoration(
+                  color: crema,
+                  borderRadius:
+                  BorderRadius.circular(12),
                 ),
 
-                const SizedBox(
-                  height: 4,
-                ),
+                child: ClipRRect(
+                  borderRadius:
+                  BorderRadius.circular(12),
 
-                Text(
-                  producto.descripcion,
+                  child: Image.asset(
+                    // ------------------------------------------------
+                    // IMAGEN SEGÚN ID
+                    // ------------------------------------------------
 
-                  style: TextStyle(
-                    color:
-                    Colors.grey[700],
+                    producto.id == 1
+                        ? 'assets/cafe1.png'
+                        : producto.id == 2
+                        ? 'assets/cafe2.png'
+                        : producto.id == 3
+                        ? 'assets/cafe3.png'
+                        : imagenLocal,
 
-                    fontSize: 13,
-                  ),
-                ),
+                    width: double.infinity,
+                    height: double.infinity,
 
-                const SizedBox(
-                  height: 6,
-                ),
+                    fit: BoxFit.cover,
 
-                Text(
-                  _formatearPrecio(
-                    producto.precio,
-                  ),
+                    errorBuilder:
+                        (context, error, stackTrace) {
+                      return Container(
+                        color: crema,
 
-                  style:
-                  const TextStyle(
-                    fontWeight:
-                    FontWeight.bold,
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment:
+                            MainAxisAlignment.center,
 
-                    fontSize: 14,
+                            children: [
+                              Icon(
+                                Icons
+                                    .image_not_supported,
+                                size: 40,
+                                color: cafeClaro,
+                              ),
 
-                    color:
-                    Color(0xFF8B1E1E),
-                  ),
-                ),
+                              SizedBox(height: 6),
 
-                const SizedBox(
-                  height: 10,
-                ),
-
-                // ==================================================
-                // AGREGAR AL CARRITO
-                // ==================================================
-
-                SizedBox(
-                  width:
-                  double.infinity,
-
-                  child:
-                  ElevatedButton.icon(
-
-                    onPressed: () {
-
-                      ScaffoldMessenger
-                          .of(context)
-                          .showSnackBar(
-                        SnackBar(
-                          content:
-                          Text(
-                            '${producto.nombre} agregado al carrito',
-                          ),
-
-                          duration:
-                          const Duration(
-                            seconds: 2,
+                              Text(
+                                'Imagen no encontrada',
+                                textAlign:
+                                TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color:
+                                  textoSuave,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
                     },
-
-                    icon:
-                    const Icon(
-                      Icons.shopping_cart,
-                    ),
-
-                    label:
-                    const Text(
-                      'Agregar al carrito',
-                    ),
-
-                    style:
-                    ElevatedButton.styleFrom(
-                      backgroundColor:
-                      const Color(
-                        0xFF8B1E1E,
-                      ),
-
-                      foregroundColor:
-                      Colors.white,
-
-                      padding:
-                      const EdgeInsets
-                          .symmetric(
-                        vertical: 12,
-                      ),
-
-                      shape:
-                      RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                          10,
-                        ),
-                      ),
-                    ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 8),
+
+            // =================================================
+            // NOMBRE
+            // =================================================
+
+            Text(
+              producto.nombre.isEmpty
+                  ? 'Sin nombre'
+                  : producto.nombre,
+
+              maxLines: 1,
+
+              overflow: TextOverflow.ellipsis,
+
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: textoOscuro,
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            // =================================================
+            // DESCRIPCIÓN
+            // =================================================
+
+            if (producto.descripcion != null &&
+                producto.descripcion!.isNotEmpty)
+              Text(
+                producto.descripcion!,
+
+                maxLines: 2,
+
+                overflow:
+                TextOverflow.ellipsis,
+
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: textoSuave,
+                ),
+              ),
+
+            const Spacer(),
+
+            // =================================================
+            // PRECIO
+            // =================================================
+
+            Text(
+              '\$${producto.precio.toStringAsFixed(0)}',
+
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: cafePrincipal,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // =================================================
+            // BOTÓN AGREGAR
+            // =================================================
+
+            SizedBox(
+              width: double.infinity,
+
+              child: ElevatedButton(
+                onPressed: onAgregar,
+
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cafePrincipal,
+                  foregroundColor: Colors.white,
+
+                  padding:
+                  const EdgeInsets.symmetric(
+                    vertical: 10,
+                  ),
+
+                  shape:
+                  RoundedRectangleBorder(
+                    borderRadius:
+                    BorderRadius.circular(10),
+                  ),
+                ),
+
+                child: const Text(
+                  'AGREGAR',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

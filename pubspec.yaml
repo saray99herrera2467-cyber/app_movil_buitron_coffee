@@ -21,6 +21,13 @@ dependencies:
   # Librería para manejar el estado de la aplicación
   provider: ^6.1.5+1
 
+  # Librería para conectar con Supabase (base de datos, auth, etc.)
+  supabase_flutter: ^2.17.2
+
+  # Librerías para el panel de administración (peticiones HTTP y token guardado)
+  http: ^1.2.2
+  shared_preferences: ^2.3.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -29,3 +36,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/

@@ -13,28 +13,96 @@ class Producto {
     this.descripcion,
     required this.precio,
     this.imagen,
-    required this.categoria,
-    required this.estado,
+    this.categoria = '',
+    this.estado = true,
   });
 
-  // ✅ CONVERTIR DESDE JSON DE SUPABASE
   factory Producto.fromJson(Map<String, dynamic> json) {
+    // ID
+    int id = 0;
+
+    if (json['id'] is int) {
+      id = json['id'];
+    } else {
+      id = int.tryParse('${json['id']}') ?? 0;
+    }
+
+    // NOMBRE
+    final String nombre =
+    (json['nombre'] ??
+        json['nombre_producto'] ??
+        json['producto'] ??
+        '')
+        .toString();
+
+    // DESCRIPCIÓN
+    String? descripcion;
+
+    if (json['descripcion'] != null) {
+      descripcion = json['descripcion'].toString();
+    } else if (json['descripción'] != null) {
+      descripcion = json['descripción'].toString();
+    }
+
+    // PRECIO
+    double precio = 0.0;
+
+    if (json['precio'] is num) {
+      precio = (json['precio'] as num).toDouble();
+    } else {
+      precio = double.tryParse(
+        '${json['precio']}'.replaceAll(',', '.'),
+      ) ??
+          0.0;
+    }
+
+    // IMAGEN
+    String? imagen;
+
+    if (json['imagen'] != null) {
+      final valorImagen = json['imagen'].toString().trim();
+
+      if (valorImagen.isNotEmpty) {
+        imagen = valorImagen;
+      }
+    }
+
+    // CATEGORÍA
+    final String categoria =
+    (json['categoria'] ??
+        json['categoría'] ??
+        json['category'] ??
+        '')
+        .toString();
+
+    // ESTADO
+    bool estado = true;
+
+    if (json['estado'] is bool) {
+      estado = json['estado'];
+    } else if (json['estado'] != null) {
+      final valor = json['estado'].toString().toLowerCase();
+
+      estado = valor != 'false' &&
+          valor != '0' &&
+          valor != 'inactivo';
+    }
+
     return Producto(
-      id: json['id'] ?? 0,
-      nombre: json['nombre_producto'] ?? 'Sin nombre',
-      descripcion: json['descripcion'],
-      precio: (json['precio'] ?? 0).toDouble(),
-      imagen: json['imagen'],
-      categoria: json['categoria'] ?? 'General',
-      estado: json['estado'] ?? true,
+      id: id,
+      nombre: nombre,
+      descripcion: descripcion,
+      precio: precio,
+      imagen: imagen,
+      categoria: categoria,
+      estado: estado,
     );
   }
 
-  // ✅ CONVERTIR A JSON PARA ENVIAR A SUPABASE (crear/actualizar)
-  // No incluye 'id' porque Supabase lo genera/identifica solo.
   Map<String, dynamic> toJson() {
     return {
-      'nombre_producto': nombre,
+      'id': id,
+      'nombre': nombre,
       'descripcion': descripcion,
       'precio': precio,
       'imagen': imagen,
@@ -43,7 +111,6 @@ class Producto {
     };
   }
 
-  // ✅ COPIAR CON CAMBIOS (útil para editar sin mutar el original)
   Producto copyWith({
     int? id,
     String? nombre,

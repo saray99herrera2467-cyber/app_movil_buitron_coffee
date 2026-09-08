@@ -1,30 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/producto.dart';
 
-<<<<<<< Updated upstream
-class ItemCarrito {
-  final Producto producto;
-  int cantidad;
-
-  ItemCarrito({required this.producto, this.cantidad = 1});
-
-  double get subtotal => producto.precio * cantidad;
-}
-
-class CarritoProvider extends ChangeNotifier {
-  List<ItemCarrito> items = [];
-
-  int get cantidadTotal => items.fold(0, (sum, item) => sum + item.cantidad);
-  double get total => items.fold(0, (sum, item) => sum + item.subtotal);
-
-  // ✅ AGREGAR PRODUCTO
-  void agregarProducto(Producto prod) {
-    int index = items.indexWhere((item) => item.producto.id == prod.id);
-    if (index >= 0) {
-      items[index].cantidad++;
-    } else {
-      items.add(ItemCarrito(producto: prod));
-=======
 class CarritoProvider with ChangeNotifier {
   // ============================================================
   // PRODUCTOS DEL CARRITO
@@ -105,39 +81,16 @@ class CarritoProvider with ChangeNotifier {
   void agregarProducto(Producto producto) {
     if (_cantidades.containsKey(producto.id)) {
       // Ya existe → aumentar cantidad
-      _cantidades[producto.id] =
-          (_cantidades[producto.id] ?? 0) + 1;
+      _cantidades[producto.id] = (_cantidades[producto.id] ?? 0) + 1;
     } else {
       // Producto nuevo
       _items.add(producto);
       _cantidades[producto.id] = 1;
->>>>>>> Stashed changes
     }
 
     notifyListeners();
   }
 
-<<<<<<< Updated upstream
-  // ✅ CAMBIAR CANTIDAD
-  void cambiarCantidad(int index, int nuevaCantidad) {
-    if (nuevaCantidad <= 0) {
-      items.removeAt(index);
-    } else {
-      items[index].cantidad = nuevaCantidad;
-    }
-    notifyListeners();
-  }
-
-  // ✅ ELIMINAR PRODUCTO
-  void eliminarProducto(int index) {
-    items.removeAt(index);
-    notifyListeners();
-  }
-
-  // ✅ VACIAR CARRITO
-  void vaciarCarrito() {
-    items.clear();
-=======
   // ============================================================
   // MÉTODO ALTERNATIVO PARA AGREGAR
   // ============================================================
@@ -176,8 +129,7 @@ class CarritoProvider with ChangeNotifier {
   // ============================================================
 
   void aumentarCantidad(int productoId) {
-    final cantidadActual =
-        _cantidades[productoId] ?? 1;
+    final cantidadActual = _cantidades[productoId] ?? 1;
 
     cambiarCantidad(
       productoId,
@@ -190,8 +142,7 @@ class CarritoProvider with ChangeNotifier {
   // ============================================================
 
   void disminuirCantidad(int productoId) {
-    final cantidadActual =
-        _cantidades[productoId] ?? 1;
+    final cantidadActual = _cantidades[productoId] ?? 1;
 
     cambiarCantidad(
       productoId,
@@ -229,7 +180,6 @@ class CarritoProvider with ChangeNotifier {
     _items.clear();
     _cantidades.clear();
 
->>>>>>> Stashed changes
     notifyListeners();
   }
 

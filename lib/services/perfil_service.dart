@@ -1,24 +1,32 @@
-// lib/services/perfil_service.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PerfilService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  //  GET CARGAR DATOS DEL USUARIO DESDE LA TABLA "usuario"
-  Future<Map<String, dynamic>?> cargarDatosUsuario(String correo) async {
+  // ============================================================
+  // CARGAR DATOS DEL USUARIO
+  // ============================================================
+
+  Future<Map<String, dynamic>?> cargarDatosUsuario(
+      String correo,
+      ) async {
     try {
       final respuesta = await _supabase
           .from('usuario')
           .select()
           .eq('correo', correo)
           .maybeSingle();
+
       return respuesta;
     } catch (e) {
       throw Exception('Error al cargar datos: $e');
     }
   }
 
-  //PATCH ACTUALIZAR DATOS EN LA TABLA "usuario"
+  // ============================================================
+  // ACTUALIZAR TABLA usuario
+  // ============================================================
+
   Future<void> actualizarEnTabla({
     required String correo,
     required String nombre,
@@ -26,17 +34,23 @@ class PerfilService {
     required String direccion,
   }) async {
     try {
-      await _supabase.from('usuario').update({
+      await _supabase
+          .from('usuario')
+          .update({
         'nombre_usuario': nombre,
         'telefono': telefono,
         'direccion': direccion,
-      }).eq('correo', correo);
+      })
+          .eq('correo', correo);
     } catch (e) {
       throw Exception('Error al guardar en tabla: $e');
     }
   }
 
-  // PUT ACTUALIZAR DATOS EN AUTENTICACIÓN DE SUPABASE
+  // ============================================================
+  // ACTUALIZAR DATOS EN AUTH
+  // ============================================================
+
   Future<void> actualizarEnAuth({
     required String nombre,
     required String telefono,
@@ -53,11 +67,16 @@ class PerfilService {
         ),
       );
     } catch (e) {
-      throw Exception('Error al actualizar autenticación: $e');
+      throw Exception(
+        'Error al actualizar autenticación: $e',
+      );
     }
   }
 
-  //  FUNCIÓN UNIFICADA: ACTUALIZA TODO JUNTO
+  // ============================================================
+  // GUARDAR PERFIL COMPLETO
+  // ============================================================
+
   Future<void> guardarPerfilCompleto({
     required String correo,
     required String nombre,
@@ -69,6 +88,7 @@ class PerfilService {
       telefono: telefono,
       direccion: direccion,
     );
+
     await actualizarEnTabla(
       correo: correo,
       nombre: nombre,

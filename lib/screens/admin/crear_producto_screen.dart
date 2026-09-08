@@ -144,7 +144,7 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
                   child: Image.network(
                     _imagenCtrl.text.trim(),
                     height: 120,
-                    errorBuilder: (_, __, ___) =>
+                    errorBuilder: (_, _, _) =>
                     const Text('No se pudo cargar la imagen'),
                   ),
                 ),

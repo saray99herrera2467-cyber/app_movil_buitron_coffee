@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'catalogo_screen.dart';
 
 class PagosScreen extends StatefulWidget {
   const PagosScreen({super.key});
@@ -8,152 +9,277 @@ class PagosScreen extends StatefulWidget {
 }
 
 class _PagosScreenState extends State<PagosScreen> {
-  static const Color _colorPrimario = Color(0xFF8B1E1E);
-  static const Color _colorFondo = Color(0xFFF9F6F6);
-  static const Color _colorNequi = Color(0xFFFF4D6D);
+
+  // ==========================================================
+  // COLORES BUITRÓN COFFEE
+  // ==========================================================
+
+  static const Color cafePrincipal = Color(0xFF4E342E);
+  static const Color cafeClaro = Color(0xFF795548);
+  static const Color crema = Color(0xFFF5EFE6);
+  static const Color cremaClaro = Color(0xFFFFFCF7);
+  static const Color dorado = Color(0xFFC8A45D);
+  static const Color textoOscuro = Color(0xFF3A2925);
+  static const Color textoSuave = Color(0xFF756860);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _colorFondo,
+      backgroundColor: crema,
+
+      // ========================================================
+      // APP BAR
+      // ========================================================
 
       appBar: AppBar(
-        leading: const BackButton(color: Colors.white),
-        backgroundColor: _colorPrimario,
+        backgroundColor: cafePrincipal,
         elevation: 0,
+
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+          ),
+
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CatalogoScreen(),
+              ),
+            );
+          },
+        ),
+
+        title: const Text(
+          'BUITRÓN COFFEE',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
+        ),
+
+        centerTitle: true,
       ),
 
+      // ========================================================
+      // CUERPO
+      // ========================================================
+
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              color: _colorPrimario,
-              child: const Text(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: [
+
+              const SizedBox(height: 25),
+
+              // ==================================================
+              // TÍTULO
+              // ==================================================
+
+              const Text(
                 'Pagos',
-                textAlign: TextAlign.center,
+
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
+                  color: cafePrincipal,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
 
-            const Padding(
-              padding: EdgeInsets.all(10),
-              child: Text(
-                'Pagos',
+              const SizedBox(height: 6),
+
+              const Text(
+                'Selecciona tu método de pago',
+
                 style: TextStyle(
-                  color: _colorPrimario,
+                  color: textoSuave,
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 30),
 
-            Center(
-              child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: _colorNequi,
-                      shape: BoxShape.circle,
+              // ==================================================
+              // MÉTODO NEQUI
+              // ==================================================
+
+              Center(
+                child: Column(
+                  children: [
+
+                    Container(
+                      width: 90,
+                      height: 90,
+
+                      decoration: BoxDecoration(
+                        color: cafePrincipal,
+                        shape: BoxShape.circle,
+
+                        border: Border.all(
+                          color: dorado,
+                          width: 3,
+                        ),
+                      ),
+
+                      child: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        color: Colors.white,
+                        size: 42,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.credit_card,
-                      color: Colors.white,
-                      size: 36,
+
+                    const SizedBox(height: 10),
+
+                    const Text(
+                      'Nequi',
+
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: cafePrincipal,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Nequi',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+
+                    const SizedBox(height: 4),
+
+                    const Text(
+                      'Pago mediante transferencia',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: textoSuave,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 35),
+              const SizedBox(height: 35),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
+              // ==================================================
+              // NÚMERO TELEFÓNICO
+              // ==================================================
+
+              const Text(
                 'Ingrese su número',
+
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: textoOscuro,
                 ),
               ),
-            ),
 
-            const SizedBox(height: 6),
+              const SizedBox(height: 8),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
+              TextField(
                 keyboardType: TextInputType.phone,
+
                 decoration: InputDecoration(
-                  hintText: 'Número telefónico empresa\n3052456845',
-                  hintStyle: const TextStyle(fontSize: 13, color: Colors.black45),
+                  hintText:
+                  'Número telefónico empresa\n3052456845',
+
+                  hintStyle: const TextStyle(
+                    fontSize: 13,
+                    color: textoSuave,
+                  ),
+
+                  prefixIcon: const Icon(
+                    Icons.phone_outlined,
+                    color: cafePrincipal,
+                  ),
+
                   filled: true,
-                  fillColor: Colors.white,
+
+                  fillColor: cremaClaro,
+
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: Colors.black12),
+                    borderRadius:
+                    BorderRadius.circular(10),
+
+                    borderSide: BorderSide.none,
                   ),
+
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: Colors.black12),
+                    borderRadius:
+                    BorderRadius.circular(10),
+
+                    borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
+
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius:
+                    BorderRadius.circular(10),
+
+                    borderSide: const BorderSide(
+                      color: dorado,
+                      width: 2,
+                    ),
+                  ),
+
+                  contentPadding:
+                  const EdgeInsets.symmetric(
                     horizontal: 12,
-                    vertical: 14,
+                    vertical: 15,
                   ),
                 ),
-                style: const TextStyle(fontSize: 14),
+
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: textoOscuro,
+                ),
               ),
-            ),
 
-            const Spacer(),
+              const Spacer(),
 
-            Center(
-              child: SizedBox(
-                width: 260,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _colorPrimario,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
+              // ==================================================
+              // BOTÓN CONFIRMAR
+              // ==================================================
+
+              Center(
+                child: SizedBox(
+                  width: 260,
+                  height: 50,
+
+                  child: ElevatedButton(
+                    onPressed: () {},
+
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cafePrincipal,
+
+                      foregroundColor: Colors.white,
+
+                      elevation: 2,
+
+                      shape:
+                      RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(10),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'CONFIRMAR',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+
+                    child: const Text(
+                      'CONFIRMAR',
+
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 30),
-          ],
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
