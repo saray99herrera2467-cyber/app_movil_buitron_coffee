@@ -1,0 +1,8 @@
+- `[x]` Update `PqrsScreen` (User) to match Supabase schema
+- `[x]` Update `AdminPqrsScreen` (Admin) to match Supabase schema and add response field
+- `[x]` Update `PqrsService` methods
+- `[x]` Verify all views with `flutter analyze`
+- `[ ]` Add `documento` field and restrictions to `registro_screen.dart`
+- `[ ]` Implement `eliminarPedido` in `historial_service.dart`
+- `[ ]` Add delete button and logic to `historial_screen.dart`
+- `[ ]` Verify changes
