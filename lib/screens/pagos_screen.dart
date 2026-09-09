@@ -26,18 +26,12 @@ class PagosScreen extends StatefulWidget {
 }
 
 class _PagosScreenState extends State<PagosScreen> {
-  // 'nequi', 'daviplata' o 'pse'
   String _metodoSeleccionado = 'nequi';
 
-  // Código de banco de ePayco/PSE para cada método fijo
   static const Map<String, String> _codigoBancoPorMetodo = {
     'nequi': '1060',
     'daviplata': '1801',
   };
-
-  // ==========================================================
-  // IR AL FORMULARIO DE PAGO (banco/documento)
-  // ==========================================================
 
   void _irAFormularioPago() {
     Navigator.push(
@@ -50,7 +44,6 @@ class _PagosScreenState extends State<PagosScreen> {
           nombreCompleto: widget.nombreCompleto,
           telefono: widget.telefono,
           direccion: widget.direccion,
-          // Nequi y Daviplata precargan su código; PSE lo deja libre
           bancoPreseleccionado: _codigoBancoPorMetodo[_metodoSeleccionado],
         ),
       ),
@@ -82,10 +75,6 @@ class _PagosScreenState extends State<PagosScreen> {
         return 'CONTINUAR CON PSE';
     }
   }
-
-  // ==========================================================
-  // COLORES BUITRÓN COFFEE
-  // ==========================================================
 
   static const Color cafePrincipal = Color(0xFF4E342E);
   static const Color crema = Color(0xFFF5EFE6);
@@ -143,10 +132,6 @@ class _PagosScreenState extends State<PagosScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ==================================================
-              // SELECTOR DE MÉTODO (3 opciones)
-              // ==================================================
-
               Row(
                 children: [
                   Expanded(
@@ -193,10 +178,6 @@ class _PagosScreenState extends State<PagosScreen> {
 
               const SizedBox(height: 25),
 
-              // ==================================================
-              // INFO SEGÚN MÉTODO
-              // ==================================================
-
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -218,10 +199,6 @@ class _PagosScreenState extends State<PagosScreen> {
               ),
 
               const Spacer(),
-
-              // ==================================================
-              // BOTÓN CONFIRMAR
-              // ==================================================
 
               Center(
                 child: SizedBox(
@@ -251,10 +228,6 @@ class _PagosScreenState extends State<PagosScreen> {
     );
   }
 }
-
-// ============================================================
-// TARJETA SELECCIONABLE DE MÉTODO DE PAGO
-// ============================================================
 
 class _TarjetaMetodo extends StatelessWidget {
   final String titulo;
