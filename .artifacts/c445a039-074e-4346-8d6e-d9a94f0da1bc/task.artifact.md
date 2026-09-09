@@ -1,5 +1,6 @@
-- `[ ]` Implementar `actualizarClave` en `AuthService`
-- `[ ]` Ajustar `estado: 'Pendiente'` en `pqrs_screen.dart`
-- `[ ]` Crear `RestablecerClaveScreen`
-- `[ ]` Implementar `_LineaTiempoPedido` en `historial_screen.dart`
+- `[ ]` Actualizar `TipoPqrs` enum con `felicitacion`
+- `[ ]` Mapear `peticion` -> `'pregunta'` para Supabase
+- `[ ]` Normalizar todos los tipos a minúsculas y sin tildes en `etiqueta`
+- `[ ]` Añadir `etiquetaVisual` para la interfaz de usuario
+- `[ ]` Verificar envío exitoso
 - `[ ]` Verificar con `flutter analyze`

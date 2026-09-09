@@ -25,22 +25,41 @@ enum TipoPqrs {
   queja,
   reclamo,
   sugerencia,
+  felicitacion, // ✅ Nuevo tipo soportado por la DB
 }
 
 extension TipoPqrsX on TipoPqrs {
   String get etiqueta {
     switch (this) {
       case TipoPqrs.peticion:
-        return 'Petición';
+        return 'pregunta'; // ✅ Mapeado a 'pregunta' según la restricción SQL
 
       case TipoPqrs.queja:
-        return 'Queja';
+        return 'queja';
 
       case TipoPqrs.reclamo:
-        return 'Reclamo';
+        return 'reclamo';
 
       case TipoPqrs.sugerencia:
+        return 'sugerencia';
+
+      case TipoPqrs.felicitacion:
+        return 'felicitacion';
+    }
+  }
+
+  String get etiquetaVisual {
+    switch (this) {
+      case TipoPqrs.peticion:
+        return 'Petición';
+      case TipoPqrs.queja:
+        return 'Queja';
+      case TipoPqrs.reclamo:
+        return 'Reclamo';
+      case TipoPqrs.sugerencia:
         return 'Sugerencia';
+      case TipoPqrs.felicitacion:
+        return 'Felicitación';
     }
   }
 
@@ -57,6 +76,9 @@ extension TipoPqrsX on TipoPqrs {
 
       case TipoPqrs.sugerencia:
         return Icons.lightbulb_outline;
+
+      case TipoPqrs.felicitacion:
+        return Icons.thumb_up_alt_outlined;
     }
   }
 }
@@ -221,7 +243,7 @@ class _PqrsScreenState extends State<PqrsScreen> {
         'telefono': _telefonoCtrl.text.trim(),
         'descripcion': descripcionFinal,
         'tipo': _tipo.etiqueta,
-        'estado': 'Pendiente', // ✅ Usamos el valor exacto de la DB para evitar el error CHECK
+        'estado': 'pendiente', // ✅ Minúsculas exactas según la restricción SQL
         'codigo_referencia': radicadoGenerado.numero,
         'fecha_creacion': DateTime.now().toIso8601String(),
         'fecha_actualizacion': DateTime.now().toIso8601String(),
@@ -754,7 +776,7 @@ class _SelectorTipo extends StatelessWidget {
                     const SizedBox(height: 5),
 
                     Text(
-                      tipo.etiqueta,
+                      tipo.etiquetaVisual,
                       textAlign:
                       TextAlign.center,
 
@@ -994,7 +1016,7 @@ class _ComprobanteRadicado
 
               Expanded(
                 child: Text(
-                  'Tu ${tipo.etiqueta.toLowerCase()} fue radicada',
+                  'Tu ${tipo.etiquetaVisual.toLowerCase()} fue radicada',
 
                   style:
                   const TextStyle(

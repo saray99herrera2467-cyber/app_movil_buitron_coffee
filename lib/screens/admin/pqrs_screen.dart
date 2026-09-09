@@ -70,7 +70,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
   List<Map<String, dynamic>> get pqrsFiltradas {
     return pqrs.where((item) {
       final coincideEstado = filtroEstado == 'todos' ||
-          item['estado'].toString() == filtroEstado;
+          item['estado'].toString().toLowerCase() == filtroEstado.toLowerCase();
 
       final texto = busqueda.toLowerCase();
 
@@ -84,25 +84,27 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
   }
 
   Color colorEstado(String estado) {
-    switch (estado.toUpperCase()) {
-      case 'PENDIENTE': return Colors.orange;
-      case 'EN PROCESO': return Colors.blue;
-      case 'RESUELTA': return Colors.green;
+    switch (estado.toLowerCase()) {
+      case 'pendiente': return Colors.orange;
+      case 'en proceso': return Colors.blue;
+      case 'resuelta': return Colors.green;
+      case 'cerrada': return Colors.grey;
       default: return Colors.grey;
     }
   }
 
   IconData iconoEstado(String estado) {
-    switch (estado.toUpperCase()) {
-      case 'PENDIENTE': return Icons.pending_actions;
-      case 'EN PROCESO': return Icons.autorenew;
-      case 'RESUELTA': return Icons.check_circle;
+    switch (estado.toLowerCase()) {
+      case 'pendiente': return Icons.pending_actions;
+      case 'en proceso': return Icons.autorenew;
+      case 'resuelta': return Icons.check_circle;
+      case 'cerrada': return Icons.lock_outline;
       default: return Icons.help_outline;
     }
   }
 
   void mostrarDetalle(Map<String, dynamic> pqrsItem) {
-    String estadoActual = pqrsItem['estado'] ?? 'Pendiente';
+    String estadoActual = pqrsItem['estado'] ?? 'pendiente';
     final TextEditingController respuestaCtrl = TextEditingController(text: pqrsItem['respuesta'] ?? '');
 
     showDialog(
@@ -126,30 +128,33 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                     Text(pqrsItem['nombre'] ?? 'Sin nombre', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cafePrincipal)),
                     const SizedBox(height: 4),
                     Text(pqrsItem['email'] ?? '', style: const TextStyle(fontSize: 13, color: textoSuave)),
+                    const SizedBox(height: 10),
+                    Text('Tipo: ${(pqrsItem['tipo'] ?? '').toString().toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold, color: dorado, fontSize: 12)),
                     const SizedBox(height: 15),
                     const Text('Descripción:', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(pqrsItem['descripcion'] ?? ''),
                     const SizedBox(height: 20),
                     const Text('Cambiar Estado:', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-    DropdownButtonFormField<String>(
-      initialValue: ['PENDIENTE', 'EN PROCESO', 'RESUELTA'].contains(estadoActual.toUpperCase()) 
-          ? estadoActual.toUpperCase() 
-          : 'PENDIENTE',
-      decoration: const InputDecoration(border: OutlineInputBorder()),
-      items: const [
-        DropdownMenuItem(value: 'PENDIENTE', child: Text('Pendiente')),
-        DropdownMenuItem(value: 'EN PROCESO', child: Text('En proceso')),
-        DropdownMenuItem(value: 'RESUELTA', child: Text('Resuelta')),
-      ],
-      onChanged: (valor) {
-        if (valor != null) {
-          setDialogState(() {
-            estadoActual = valor;
-          });
-        }
-      },
-    ),
+                    DropdownButtonFormField<String>(
+                      initialValue: ['pendiente', 'en proceso', 'resuelta', 'cerrada'].contains(estadoActual.toLowerCase()) 
+                          ? estadoActual.toLowerCase() 
+                          : 'pendiente',
+                      decoration: const InputDecoration(border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
+                        DropdownMenuItem(value: 'en proceso', child: Text('En proceso')),
+                        DropdownMenuItem(value: 'resuelta', child: Text('Resuelta')),
+                        DropdownMenuItem(value: 'cerrada', child: Text('Cerrada')),
+                      ],
+                      onChanged: (valor) {
+                        if (valor != null) {
+                          setDialogState(() {
+                            estadoActual = valor;
+                          });
+                        }
+                      },
+                    ),
                     const SizedBox(height: 20),
                     const Text('Respuesta del Administrador:', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
@@ -241,9 +246,10 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                     ),
                     items: const [
                       DropdownMenuItem(value: 'todos', child: Text('Todos')),
-                      DropdownMenuItem(value: 'Pendiente', child: Text('Pendientes')),
-                      DropdownMenuItem(value: 'En proceso', child: Text('En proceso')),
-                      DropdownMenuItem(value: 'Resuelta', child: Text('Resueltas')),
+                      DropdownMenuItem(value: 'pendiente', child: Text('Pendientes')),
+                      DropdownMenuItem(value: 'en proceso', child: Text('En proceso')),
+                      DropdownMenuItem(value: 'resuelta', child: Text('Resueltas')),
+                      DropdownMenuItem(value: 'cerrada', child: Text('Cerradas')),
                     ],
                     onChanged: (valor) => setState(() => filtroEstado = valor!),
                   ),

@@ -1,35 +1,28 @@
-# Plan: Solución Definitiva PQRS, Recuperación de Clave y Seguimiento Visual
+# Plan: Ajuste de Restricción de Tipo en PQRS
 
-Este plan aborda el error persistente de PQRS usando el valor exacto de la base de datos, completa el flujo de restablecimiento de contraseña y añade una línea de tiempo para el seguimiento de productos.
+Basado en la restricción `CHECK` exacta para la columna `tipo` (`'pregunta'`, `'queja'`, `'reclamo'`, `'sugerencia'`, `'felicitacion'`), este plan normaliza los tipos de PQRS para cumplir estrictamente con los valores permitidos en la base de datos.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **PQRS**: Usaré el valor exacto `'Pendiente'` (P mayúscula). Si el error `pqrs_estado_check` persiste, es posible que la restricción en Supabase tenga un espacio extra o use un valor diferente.
-> - **Seguimiento**: Implementaré un widget de línea de tiempo en el detalle del pedido para visualizar los estados: Pendiente -> Pagado -> Enviado -> Entregado.
-> - **Clave**: Se creará la pantalla `RestablecerClaveScreen`. Para que funcione, el usuario debe abrir el enlace que llega a su correo; Supabase abrirá la app y allí podrá cambiar la contraseña.
+> - **Cambio de "Petición" a "Pregunta"**: Tu base de datos usa el término `'pregunta'`. Actualizaré la aplicación para que internamente envíe `'pregunta'` cuando el usuario elija "Petición" (o cambiaré el nombre visual si prefieres).
+> - **Minúsculas y Tildes**: Se eliminarán las tildes y se usarán minúsculas para los valores de envío (`'queja'`, `'reclamo'`, etc.), pero mantendremos los nombres bonitos en la pantalla.
 
 ## Proposed Changes
-
-### [Services]
-
-#### [MODIFY] [auth_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/auth_service.dart)
-- Añadir método `actualizarClave(String nuevaClave)` para finalizar el proceso de recuperación.
 
 ### [Screens]
 
 #### [MODIFY] [pqrs_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/pqrs_screen.dart)
-- Enviar explícitamente `'estado': 'Pendiente'`.
-
-#### [NEW] [restablecer_clave_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/restablecer_clave_screen.dart)
-- Crear pantalla con validación de contraseña para el cambio final.
-
-#### [MODIFY] [historial_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/historial_screen.dart)
-- Añadir el widget `_LineaTiempoPedido` en el modal de detalle del pedido para mostrar el progreso del envío.
+- Actualizar el enum `TipoPqrs` para incluir `felicitacion`.
+- Modificar `TipoPqrsX.etiqueta` para que devuelva los valores exactos del ARRAY de Supabase:
+    - `peticion` -> `'pregunta'`
+    - `queja` -> `'queja'`
+    - `reclamo` -> `'reclamo'`
+    - `sugerencia` -> `'sugerencia'`
+    - `felicitacion` -> `'felicitacion'`
+- Crear una propiedad `etiquetaVisual` para mostrar "Petición", "Queja", etc., en la interfaz.
 
 ## Verification Plan
 
 ### Manual Verification
-1. **PQRS**: Intentar enviar y verificar que no hay error 23514.
-2. **Seguimiento**: Ver un pedido en el historial y confirmar que la línea de tiempo se marca según el estado.
-3. **Clave**: Probar el envío de correo y la navegación a la nueva pantalla.
+1. **Envío de PQRS**: Probar el envío de cada tipo. Al enviar `'pregunta'` o `'queja'` en minúsculas y sin tildes, Supabase ya no debe arrojar el error `pqrs_tipo_check`.

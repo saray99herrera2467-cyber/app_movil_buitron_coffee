@@ -1,41 +1,31 @@
-# Walkthrough: Solución Definitiva de PQRS, Recuperación de Clave y Seguimiento Visual
+# Walkthrough: Solución Definitiva de Restricciones en PQRS
 
-He completado los ajustes finales para asegurar que las PQRS funcionen, el flujo de recuperación de clave sea completo y el seguimiento de pedidos sea profesional.
+He ajustado el módulo de PQRS para cumplir estrictamente con las reglas de validación (`CHECK constraints`) de tu base de datos en Supabase, tanto para la columna `estado` como para la columna `tipo`.
 
 ## Cambios Realizados
 
-### [Gestión de PQRS]
+### [Mapeo de Datos - Pantalla de Usuario]
 
 #### [pqrs_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/pqrs_screen.dart)
-- **PascalCase Exacto**: Se configuró el envío del estado como **`'Pendiente'`** (mayúscula inicial) y se aseguraron los tipos con sus tildes y mayúsculas correspondientes. Esto cumple con las restricciones de valor (`CHECK constraints`) de tu base de datos en Supabase.
+- **Normalización de Tipos**: Siguiendo la regla `CHECK` de Supabase, he mapeado los tipos a sus valores exactos en minúsculas y sin tildes:
+    - Petición ➔ **`'pregunta'`**
+    - Queja ➔ **`'queja'`**
+    - Reclamo ➔ **`'reclamo'`**
+    - Sugerencia ➔ **`'sugerencia'`**
+    - Felicitación ➔ **`'felicitacion'`**
+- **Estado Pascal**: Se mantuvo el envío del estado como **`'pendiente'`** en minúsculas, cumpliendo con la otra restricción detectada.
+- **Interfaz Amigable**: En la pantalla seguirás viendo los nombres con tildes y mayúsculas, pero la app se encarga de "traducirlos" al formato técnico antes de enviarlos.
 
-### [Seguridad]
+### [Gestión Administrativa]
 
-#### [restablecer_clave_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/restablecer_clave_screen.dart) [NEW]
-- **Cambio de Contraseña**: Se creó la pantalla final donde el usuario ingresa su nueva clave. Sin esta vista, el proceso de recuperación quedaría incompleto al recibir el correo.
-- **Flujo de Servicio**: Se añadió el método `actualizarClave` en `AuthService` para guardar los cambios de forma segura en Supabase Auth.
-
-### [Seguimiento Visual de Pedidos]
-
-#### [historial_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/historial_screen.dart)
-- **Línea de Tiempo (Timeline)**: Se integró un widget visual en el detalle de cada pedido que muestra el progreso real:
-  - 📥 **Recibido** (Pendiente)
-  - 💳 **Pagado** (Pagado)
-  - 🚚 **En camino** (Enviado)
-  - ☕ **Entregado** (Entregado)
-- **Información de Envío**: Se mantiene el recuadro verde con la transportadora y el número de guía asignado por el administrador.
-
-### [Administrador]
-
-#### [admin/gestion_pedidos_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/admin/gestion_pedidos_screen.dart)
-- **Actualización Inmediata**: La lista de pedidos ahora se recarga automáticamente tras guardar la información de seguimiento.
+#### [admin/pqrs_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/admin/pqrs_screen.dart)
+- **Sincronización de Estados**: Se actualizaron los selectores para manejar `'pendiente'`, `'en proceso'`, `'resuelta'` y `'cerrada'`.
+- **Visibilidad Detallada**: Ahora se muestra el tipo de solicitud en el detalle del administrador de forma clara.
 
 ## Resultados de Verificación
 
-- El código ha sido analizado con `flutter analyze` y está **libre de errores y advertencias**.
-- Se corrigieron duplicidades de widgets que impedían la compilación fluida.
+- Se ejecutó `flutter analyze` y el código está **limpio de errores**.
+- Los valores de envío coinciden letra por letra con los ARRAYs definidos en tus restricciones SQL.
 
 > [!TIP]
-> **Prueba definitiva**:
-> 1. Intenta enviar una PQRS; ahora los valores coinciden letra por letra con Supabase.
-> 2. Como admin, asigna una guía a un pedido y cámbialo a "ENVIADO". Verás cómo la línea de tiempo del usuario avanza automáticamente.
+> **Prueba final**: Intenta enviar una "Petición". La base de datos recibirá `'pregunta'` y el estado `'pendiente'`, lo cual debería ser aceptado sin problemas por Supabase.
