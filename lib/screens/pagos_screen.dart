@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/carrito_provider.dart';
 import '../services/pagos_service.dart';
 import 'catalogo_screen.dart';
-import 'historial_screen.dart';
+import 'pse_datos_screen.dart';
 
 class PagosScreen extends StatefulWidget {
   final double total;
@@ -28,71 +26,61 @@ class PagosScreen extends StatefulWidget {
 }
 
 class _PagosScreenState extends State<PagosScreen> {
-  bool _cargando = false;
-  final TextEditingController _numeroController = TextEditingController();
+  // 'nequi', 'daviplata' o 'pse'
+  String _metodoSeleccionado = 'nequi';
+
+  // Código de banco de ePayco/PSE para cada método fijo
+  static const Map<String, String> _codigoBancoPorMetodo = {
+    'nequi': '1060',
+    'daviplata': '1801',
+  };
 
   // ==========================================================
-  // CONFIRMAR PAGO
+  // IR AL FORMULARIO DE PAGO (banco/documento)
   // ==========================================================
 
-  Future<void> _confirmarPago() async {
-    if (_numeroController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa tu número de Nequi')),
-      );
-      return;
-    }
+  void _irAFormularioPago() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PseDatosScreen(
+          total: widget.total,
+          items: widget.items,
+          correo: widget.correo,
+          nombreCompleto: widget.nombreCompleto,
+          telefono: widget.telefono,
+          direccion: widget.direccion,
+          // Nequi y Daviplata precargan su código; PSE lo deja libre
+          bancoPreseleccionado: _codigoBancoPorMetodo[_metodoSeleccionado],
+        ),
+      ),
+    );
+  }
 
-    setState(() => _cargando = true);
+  void _confirmar() {
+    _irAFormularioPago();
+  }
 
-    try {
-      final pedido = await PedidoService.crearPedido(
-        correo: widget.correo,
-        nombreCompleto: widget.nombreCompleto,
-        telefono: widget.telefono,
-        direccion: widget.direccion,
-        metodoPago: 'Nequi',
-        numeroPago: _numeroController.text.trim(),
-        subtotal: widget.total - 15000, // Ajustar según lógica de envío
-        total: widget.total,
-        items: widget.items,
-      );
-
-      if (pedido != null) {
-        // Vaciar carrito
-        if (!mounted) return;
-        context.read<CarritoProvider>().limpiarCarrito();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.green,
-            content: Text('¡Pedido realizado con éxito!'),
-          ),
-        );
-
-        // Ir al historial
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const HistorialScreen()),
-          (route) => false,
-        );
-      } else {
-        throw Exception('No se pudo crear el pedido');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text('Error: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _cargando = false);
+  String get _textoInfo {
+    switch (_metodoSeleccionado) {
+      case 'nequi':
+        return 'Al continuar completarás tu pago vía Nequi de forma segura.';
+      case 'daviplata':
+        return 'Al continuar completarás tu pago vía Daviplata de forma segura.';
+      default:
+        return 'Al continuar podrás elegir tu banco y completar el pago vía PSE de forma segura.';
     }
   }
 
-  @override
-  void dispose() {
-    _numeroController.dispose();
-    super.dispose();
+  String get _textoBoton {
+    switch (_metodoSeleccionado) {
+      case 'nequi':
+        return 'CONTINUAR CON NEQUI';
+      case 'daviplata':
+        return 'CONTINUAR CON DAVIPLATA';
+      default:
+        return 'CONTINUAR CON PSE';
+    }
   }
 
   // ==========================================================
@@ -100,7 +88,6 @@ class _PagosScreenState extends State<PagosScreen> {
   // ==========================================================
 
   static const Color cafePrincipal = Color(0xFF4E342E);
-  static const Color cafeClaro = Color(0xFF795548);
   static const Color crema = Color(0xFFF5EFE6);
   static const Color cremaClaro = Color(0xFFFFFCF7);
   static const Color dorado = Color(0xFFC8A45D);
@@ -111,31 +98,18 @@ class _PagosScreenState extends State<PagosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: crema,
-
-      // ========================================================
-      // APP BAR
-      // ========================================================
-
       appBar: AppBar(
         backgroundColor: cafePrincipal,
         elevation: 0,
-
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-          ),
-
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => const CatalogoScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const CatalogoScreen()),
             );
           },
         ),
-
         title: const Text(
           'BUITRÓN COFFEE',
           style: TextStyle(
@@ -145,191 +119,101 @@ class _PagosScreenState extends State<PagosScreen> {
             letterSpacing: 1,
           ),
         ),
-
         centerTitle: true,
       ),
-
-      // ========================================================
-      // CUERPO
-      // ========================================================
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
-
               const SizedBox(height: 25),
-
-              // ==================================================
-              // TÍTULO
-              // ==================================================
-
               const Text(
                 'Pagos',
-
                 style: TextStyle(
                   color: cafePrincipal,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 6),
-
               const Text(
                 'Selecciona tu método de pago',
+                style: TextStyle(color: textoSuave, fontSize: 14),
+              ),
+              const SizedBox(height: 20),
 
-                style: TextStyle(
-                  color: textoSuave,
-                  fontSize: 14,
+              // ==================================================
+              // SELECTOR DE MÉTODO (3 opciones)
+              // ==================================================
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _TarjetaMetodo(
+                      titulo: 'Nequi',
+                      icono: Icons.account_balance_wallet_outlined,
+                      seleccionado: _metodoSeleccionado == 'nequi',
+                      onTap: () => setState(() => _metodoSeleccionado = 'nequi'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _TarjetaMetodo(
+                      titulo: 'Daviplata',
+                      icono: Icons.smartphone_outlined,
+                      seleccionado: _metodoSeleccionado == 'daviplata',
+                      onTap: () => setState(() => _metodoSeleccionado = 'daviplata'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _TarjetaMetodo(
+                      titulo: 'PSE',
+                      icono: Icons.account_balance_outlined,
+                      seleccionado: _metodoSeleccionado == 'pse',
+                      onTap: () => setState(() => _metodoSeleccionado = 'pse'),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 25),
+
+              Center(
+                child: Text(
+                  'Total a pagar: \$${widget.total.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: dorado,
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
 
               // ==================================================
-              // MÉTODO NEQUI
+              // INFO SEGÚN MÉTODO
               // ==================================================
 
-              Center(
-                child: Column(
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cremaClaro,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
                   children: [
-
-                    Container(
-                      width: 90,
-                      height: 90,
-
-                      decoration: BoxDecoration(
-                        color: cafePrincipal,
-                        shape: BoxShape.circle,
-
-                        border: Border.all(
-                          color: dorado,
-                          width: 3,
-                        ),
-                      ),
-
-                      child: const Icon(
-                        Icons.account_balance_wallet_outlined,
-                        color: Colors.white,
-                        size: 42,
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    const Text(
-                      'Nequi',
-
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: cafePrincipal,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    const Text(
-                      'Pago mediante transferencia',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: textoSuave,
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    Text(
-                      'Total a pagar: \$${widget.total.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: dorado,
+                    const Icon(Icons.info_outline, color: cafePrincipal),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _textoInfo,
+                        style: const TextStyle(fontSize: 13, color: textoSuave),
                       ),
                     ),
                   ],
-                ),
-              ),
-
-              const SizedBox(height: 35),
-
-              // ==================================================
-              // NÚMERO TELEFÓNICO
-              // ==================================================
-
-              const Text(
-                'Ingrese su número',
-
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: textoOscuro,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              TextField(
-                controller: _numeroController,
-                keyboardType: TextInputType.phone,
-
-                decoration: InputDecoration(
-                  hintText:
-                  'Número telefónico empresa\n3052456845',
-
-                  hintStyle: const TextStyle(
-                    fontSize: 13,
-                    color: textoSuave,
-                  ),
-
-                  prefixIcon: const Icon(
-                    Icons.phone_outlined,
-                    color: cafePrincipal,
-                  ),
-
-                  filled: true,
-
-                  fillColor: cremaClaro,
-
-                  border: OutlineInputBorder(
-                    borderRadius:
-                    BorderRadius.circular(10),
-
-                    borderSide: BorderSide.none,
-                  ),
-
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius:
-                    BorderRadius.circular(10),
-
-                    borderSide: BorderSide.none,
-                  ),
-
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius:
-                    BorderRadius.circular(10),
-
-                    borderSide: const BorderSide(
-                      color: dorado,
-                      width: 2,
-                    ),
-                  ),
-
-                  contentPadding:
-                  const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 15,
-                  ),
-                ),
-
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: textoOscuro,
                 ),
               ),
 
@@ -343,34 +227,17 @@ class _PagosScreenState extends State<PagosScreen> {
                 child: SizedBox(
                   width: 260,
                   height: 50,
-
                   child: ElevatedButton(
-                    onPressed: _cargando ? null : _confirmarPago,
-
+                    onPressed: _confirmar,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: cafePrincipal,
-
                       foregroundColor: Colors.white,
-
                       elevation: 2,
-
-                      shape:
-                      RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(10),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-
-                    child: _cargando
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                      'CONFIRMAR',
-
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
+                    child: Text(
+                      _textoBoton,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                   ),
                 ),
@@ -379,6 +246,69 @@ class _PagosScreenState extends State<PagosScreen> {
               const SizedBox(height: 30),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// TARJETA SELECCIONABLE DE MÉTODO DE PAGO
+// ============================================================
+
+class _TarjetaMetodo extends StatelessWidget {
+  final String titulo;
+  final IconData icono;
+  final bool seleccionado;
+  final VoidCallback onTap;
+
+  const _TarjetaMetodo({
+    required this.titulo,
+    required this.icono,
+    required this.seleccionado,
+    required this.onTap,
+  });
+
+  static const Color cafePrincipal = Color(0xFF4E342E);
+  static const Color cremaClaro = Color(0xFFFFFCF7);
+  static const Color dorado = Color(0xFFC8A45D);
+  static const Color textoOscuro = Color(0xFF3A2925);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: cremaClaro,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: seleccionado ? dorado : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icono, color: cafePrincipal, size: 28),
+            const SizedBox(height: 6),
+            Text(
+              titulo,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: textoOscuro,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       ),
     );
