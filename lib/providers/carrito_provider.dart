@@ -78,60 +78,76 @@ class CarritoProvider with ChangeNotifier {
   // AGREGAR PRODUCTO
   // ============================================================
 
-  void agregarProducto(Producto producto) {
-    if (_cantidades.containsKey(producto.id)) {
+  /// Agrega un producto al carrito.
+  /// Devuelve un String con el error si supera el stock, o null si fue exitoso.
+  String? agregarProducto(Producto producto) {
+    final int id = producto.id;
+    final int cantidadActual = _cantidades[id] ?? 0;
+
+    // Verificar si hay stock disponible
+    if (cantidadActual >= producto.stock) {
+      return 'Lo sentimos, no hay más unidades disponibles de este café.';
+    }
+
+    if (_cantidades.containsKey(id)) {
       // Ya existe → aumentar cantidad
-      _cantidades[producto.id] = (_cantidades[producto.id] ?? 0) + 1;
+      _cantidades[id] = cantidadActual + 1;
     } else {
       // Producto nuevo
       _items.add(producto);
-      _cantidades[producto.id] = 1;
+      _cantidades[id] = 1;
     }
 
     notifyListeners();
+    return null;
   }
 
   // ============================================================
   // MÉTODO ALTERNATIVO PARA AGREGAR
   // ============================================================
 
-  void agregar(Producto producto) {
-    agregarProducto(producto);
+  String? agregar(Producto producto) {
+    return agregarProducto(producto);
   }
 
   // ============================================================
   // CAMBIAR CANTIDAD
   // ============================================================
 
-  void cambiarCantidad(int productoId, int cantidad) {
+  String? cambiarCantidad(int productoId, int cantidad) {
     // Si la cantidad llega a cero, eliminamos el producto
     if (cantidad <= 0) {
       eliminarProducto(productoId);
-      return;
+      return null;
     }
 
-    // Verificamos que el producto exista
-    final existe = _items.any(
-          (producto) => producto.id == productoId,
+    // Buscamos el producto en el carrito para conocer su stock
+    final producto = _items.firstWhere(
+      (p) => p.id == productoId,
+      orElse: () => Producto(id: -1, nombre: '', precio: 0),
     );
 
-    if (!existe) {
-      return;
+    if (producto.id == -1) return 'Producto no encontrado';
+
+    // Verificar contra el stock
+    if (cantidad > producto.stock) {
+      return 'Solo quedan ${producto.stock} unidades disponibles.';
     }
 
     _cantidades[productoId] = cantidad;
 
     notifyListeners();
+    return null;
   }
 
   // ============================================================
   // AUMENTAR CANTIDAD
   // ============================================================
 
-  void aumentarCantidad(int productoId) {
+  String? aumentarCantidad(int productoId) {
     final cantidadActual = _cantidades[productoId] ?? 1;
 
-    cambiarCantidad(
+    return cambiarCantidad(
       productoId,
       cantidadActual + 1,
     );

@@ -1,4 +1,5 @@
-- `[x]` Update `PqrsScreen` (User) to match Supabase schema
-- `[x]` Update `AdminPqrsScreen` (Admin) to match Supabase schema and add response field
-- `[x]` Update `PqrsService` methods
-- `[x]` Verify all views with `flutter analyze`
+- `[ ]` Implementar `actualizarClave` en `AuthService`
+- `[ ]` Ajustar `estado: 'Pendiente'` en `pqrs_screen.dart`
+- `[ ]` Crear `RestablecerClaveScreen`
+- `[ ]` Implementar `_LineaTiempoPedido` en `historial_screen.dart`
+- `[ ]` Verificar con `flutter analyze`

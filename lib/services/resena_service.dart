@@ -4,12 +4,15 @@ import 'api_service.dart';
 
 class ResenaService {
   static final _supabase = ApiService.supabase;
+  static const String _tabla = ApiService.tablaResenas;
 
-  // ⭐ Obtener reseñas aprobadas de un producto
+  // ============================================================
+  // CLIENTE: OBTENER RESEÑAS APROBADAS
+  // ============================================================
   static Future<List<ResenaModel>> obtenerResenasAprobadasPorProducto(int productoId) async {
     try {
       final List<dynamic> datos = await _supabase
-          .from(ApiService.tablaResenas)
+          .from(_tabla)
           .select('*, usuario(*)')
           .eq('producto_id', productoId)
           .eq('estado', 'aprobada')
@@ -22,26 +25,12 @@ class ResenaService {
     }
   }
 
-  // ⭐ Obtener todas las reseñas de un producto (para debug o admin si se requiere)
-  static Future<List<ResenaModel>> obtenerResenasPorProducto(int productoId) async {
-    try {
-      final List<dynamic> datos = await _supabase
-          .from(ApiService.tablaResenas)
-          .select('*, usuario(*)')
-          .eq('producto_id', productoId)
-          .order('id', ascending: false);
-
-      return datos.map((json) => ResenaModel.fromJson(Map<String, dynamic>.from(json))).toList();
-    } catch (e) {
-      debugPrint('❌ Error obteniendo todas las reseñas: $e');
-      return [];
-    }
-  }
-
-  // ✍️ Agregar una nueva reseña
+  // ============================================================
+  // CLIENTE: AGREGAR RESEÑA
+  // ============================================================
   static Future<ResenaModel> agregarResena(ResenaModel nuevaResena) async {
     final respuesta = await _supabase
-        .from(ApiService.tablaResenas)
+        .from(_tabla)
         .insert(nuevaResena.toJson())
         .select()
         .single();
@@ -49,10 +38,40 @@ class ResenaService {
     return ResenaModel.fromJson(respuesta);
   }
 
-  // 📊 Obtener promedio de calificación de un producto
+  // ============================================================
+  // ADMIN: OBTENER TODAS LAS RESEÑAS
+  // ============================================================
+  static Future<List<dynamic>> obtenerTodasAdmin() async {
+    try {
+      return await _supabase
+          .from(_tabla)
+          .select('*, producto(*), usuario(*)')
+          .order('id', ascending: false);
+    } catch (e) {
+      debugPrint('❌ Error obteniendo todas las reseñas admin: $e');
+      rethrow;
+    }
+  }
+
+  // ============================================================
+  // ADMIN: ACTUALIZAR ESTADO
+  // ============================================================
+  static Future<void> actualizarEstado(int id, String estado) async {
+    try {
+      await _supabase
+          .from(_tabla)
+          .update({'estado': estado})
+          .eq('id', id);
+    } catch (e) {
+      debugPrint('❌ Error actualizando estado reseña: $e');
+      rethrow;
+    }
+  }
+
+  // 📊 Obtener promedio de calificación
   static Future<double> obtenerPromedioCalificacion(int productoId) async {
     final List<dynamic> datos = await _supabase
-        .from(ApiService.tablaResenas)
+        .from(_tabla)
         .select('calificacion')
         .eq('producto_id', productoId);
 

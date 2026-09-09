@@ -30,16 +30,20 @@ class PerfilService {
   Future<void> actualizarEnTabla({
     required String correo,
     required String nombre,
+    required String apellido,
     required String telefono,
     required String direccion,
+    required String documento,
   }) async {
     try {
       await _supabase
           .from('usuario')
           .update({
         'nombre_usuario': nombre,
+        'apellido': apellido,
         'telefono': telefono,
         'direccion': direccion,
+        'documento': documento,
       })
           .eq('correo', correo);
     } catch (e) {
@@ -53,16 +57,20 @@ class PerfilService {
 
   Future<void> actualizarEnAuth({
     required String nombre,
+    required String apellido,
     required String telefono,
     required String direccion,
+    required String documento,
   }) async {
     try {
       await _supabase.auth.updateUser(
         UserAttributes(
           data: {
             'nombre_usuario': nombre,
+            'apellido': apellido,
             'telefono': telefono,
             'direccion': direccion,
+            'documento': documento,
           },
         ),
       );
@@ -80,15 +88,19 @@ class PerfilService {
   Future<void> guardarPerfilCompleto({
     required String correo,
     required String nombre,
+    required String apellido,
     required String telefono,
     required String direccion,
+    required String documento,
   }) async {
     try {
       if (_supabase.auth.currentUser != null) {
         await actualizarEnAuth(
           nombre: nombre,
+          apellido: apellido,
           telefono: telefono,
           direccion: direccion,
+          documento: documento,
         );
       }
     } catch (_) {}
@@ -96,8 +108,10 @@ class PerfilService {
     await actualizarEnTabla(
       correo: correo,
       nombre: nombre,
+      apellido: apellido,
       telefono: telefono,
       direccion: direccion,
+      documento: documento,
     );
   }
 }

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../services/pse_service.dart';
-import '../services/pagos_service.dart';
+import '../services/pedido_service.dart';
 
 const Color cafePrincipal = Color(0xFF4E342E);
 const Color crema = Color(0xFFF5EFE6);
@@ -16,7 +16,7 @@ class PseDatosScreen extends StatefulWidget {
   final String nombreCompleto;
   final String telefono;
   final String direccion;
-  final String? bancoPreseleccionado; // 👈 NUEVO
+  final String? bancoPreseleccionado;
 
   const PseDatosScreen({
     super.key,
@@ -26,7 +26,7 @@ class PseDatosScreen extends StatefulWidget {
     required this.nombreCompleto,
     required this.telefono,
     required this.direccion,
-    this.bancoPreseleccionado, // 👈 NUEVO
+    this.bancoPreseleccionado,
   });
 
   @override
@@ -43,13 +43,17 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
   @override
   void initState() {
     super.initState();
-    _bancoSeleccionado = widget.bancoPreseleccionado; // 👈 NUEVO
+    _bancoSeleccionado = widget.bancoPreseleccionado;
   }
 
   Future<void> _pagarConPse() async {
     if (_bancoSeleccionado == null || _docController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Selecciona un banco e ingresa tu documento')),
+        const SnackBar(
+          content: Text('❌ Selecciona un banco e ingresa tu documento'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -57,6 +61,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
     setState(() => _procesando = true);
 
     try {
+      // 1. Crear el pedido en Supabase
       final pedido = await PedidoService.crearPedido(
         correo: widget.correo,
         nombreCompleto: widget.nombreCompleto,
@@ -72,8 +77,10 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
         total: widget.total,
         items: widget.items,
       );
-      if (pedido == null) throw Exception('No se pudo crear el pedido');
 
+      if (pedido == null) throw Exception('No se pudo crear el pedido en la base de datos');
+
+      // 2. Iniciar pago en ePayco
       final resultado = await PseService.crearPagoPse(
         banco: _bancoSeleccionado!,
         tipoDocumento: _tipoDocumento,
@@ -95,6 +102,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
 
       if (!mounted) return;
 
+      // 3. Abrir pasarela en WebView
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -102,9 +110,15 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al procesar: ${e.toString().replaceFirst('Exception: ', '')}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _procesando = false);
     }
@@ -120,113 +134,151 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
   Widget build(BuildContext context) {
     final bancos = PseService.obtenerBancos();
 
-    return Scaffold(
-      backgroundColor: crema,
-      appBar: AppBar(
-        backgroundColor: cafePrincipal,
-        centerTitle: true,
-        title: const Text('DATOS DE PAGO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Selecciona tu banco', style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal)),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: _bancoSeleccionado,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: cremaClaro,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-              items: bancos
-                  .map((b) => DropdownMenuItem(value: b.codigo, child: Text(b.nombre)))
-                  .toList(),
-              onChanged: (v) => setState(() => _bancoSeleccionado = v),
-            ),
-            const SizedBox(height: 20),
-
-            const Text('Tipo de persona', style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal)),
-            Row(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: crema,
+        appBar: AppBar(
+          backgroundColor: cafePrincipal,
+          centerTitle: true,
+          title: const Text('DATOS DE PAGO',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context)),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: RadioListTile<String>(
-                    value: '0',
-                    groupValue: _tipoPersona,
-                    title: const Text('Natural'),
-                    onChanged: (v) => setState(() => _tipoPersona = v!),
+                const Text('Selecciona tu banco',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal, fontSize: 16)),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _bancoSeleccionado,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: cremaClaro,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                  items: bancos
+                      .map((b) => DropdownMenuItem(value: b.codigo, child: Text(b.nombre)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _bancoSeleccionado = v),
+                ),
+                const SizedBox(height: 24),
+
+                const Text('Tipo de persona',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal, fontSize: 16)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        value: '0',
+                        groupValue: _tipoPersona,
+                        title: const Text('Natural', style: TextStyle(fontSize: 14)),
+                        onChanged: (v) => setState(() => _tipoPersona = v!),
+                        activeColor: cafePrincipal,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<String>(
+                        value: '1',
+                        groupValue: _tipoPersona,
+                        title: const Text('Jurídica', style: TextStyle(fontSize: 14)),
+                        onChanged: (v) => setState(() => _tipoPersona = v!),
+                        activeColor: cafePrincipal,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                const Text('Identificación',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal, fontSize: 16)),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _tipoDocumento,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: cremaClaro,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'CC', child: Text('CC')),
+                          DropdownMenuItem(value: 'CE', child: Text('CE')),
+                          DropdownMenuItem(value: 'NIT', child: Text('NIT')),
+                        ],
+                        onChanged: (v) => setState(() => _tipoDocumento = v!),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _docController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Número de documento',
+                          filled: true,
+                          fillColor: cremaClaro,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: dorado, width: 2),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 40),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _procesando ? null : _pagarConPse,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cafePrincipal,
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _procesando
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text('PAGAR \$${widget.total.toStringAsFixed(0)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
                   ),
                 ),
-                Expanded(
-                  child: RadioListTile<String>(
-                    value: '1',
-                    groupValue: _tipoPersona,
-                    title: const Text('Jurídica'),
-                    onChanged: (v) => setState(() => _tipoPersona = v!),
+                const SizedBox(height: 20),
+                const Center(
+                  child: Text(
+                    'Tu pago es procesado de forma segura por ePayco',
+                    style: TextStyle(fontSize: 12, color: Colors.black54),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: DropdownButtonFormField<String>(
-                    value: _tipoDocumento,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: cremaClaro,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'CC', child: Text('CC')),
-                      DropdownMenuItem(value: 'CE', child: Text('CE')),
-                      DropdownMenuItem(value: 'NIT', child: Text('NIT')),
-                    ],
-                    onChanged: (v) => setState(() => _tipoDocumento = v!),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: _docController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Número de documento',
-                      filled: true,
-                      fillColor: cremaClaro,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const Spacer(),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _procesando ? null : _pagarConPse,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cafePrincipal,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: _procesando
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Text('PAGAR \$${widget.total.toStringAsFixed(0)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -258,6 +310,10 @@ class _PseWebViewState extends State<_PseWebView> {
       appBar: AppBar(
         backgroundColor: cafePrincipal,
         title: const Text('Confirmación bancaria', style: TextStyle(color: Colors.white)),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: WebViewWidget(controller: _controller),
     );

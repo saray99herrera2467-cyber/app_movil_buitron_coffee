@@ -1,29 +1,53 @@
+import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
 class PqrsService {
   static final _supabase = ApiService.supabase;
+  static const String _tabla = ApiService.tablaPqrs;
 
-  // 📋 Obtener todas las PQRS (para el admin)
-  static Future<List<dynamic>> obtenerTodas() async {
-    return await _supabase
-        .from(ApiService.tablaPqrs)
-        .select()
-        .order('frecha_creacion', ascending: false);
-  }
-
-  // ✍️ Enviar una nueva PQRS
+  // ============================================================
+  // CLIENTE: ENVIAR PQRS
+  // ============================================================
   static Future<void> enviarPqrs(Map<String, dynamic> datos) async {
-    await _supabase.from(ApiService.tablaPqrs).insert(datos);
+    try {
+      await _supabase.from(_tabla).insert(datos);
+    } catch (e) {
+      debugPrint('❌ Error enviando PQRS: $e');
+      rethrow;
+    }
   }
 
-  // 🔄 Actualizar estado de una PQRS
-  static Future<void> actualizarEstado(String codigoRef, String nuevoEstado) async {
-    await _supabase
-        .from(ApiService.tablaPqrs)
-        .update({
-          'estado': nuevoEstado,
-          'fecha_actualizacion': DateTime.now().toIso8601String(),
-        })
-        .eq('codigo_referencia', codigoRef);
+  // ============================================================
+  // ADMIN: OBTENER TODAS LAS PQRS
+  // ============================================================
+  static Future<List<dynamic>> obtenerTodas() async {
+    try {
+      return await _supabase
+          .from(_tabla)
+          .select()
+          .order('fecha_creacion', ascending: false);
+    } catch (e) {
+      debugPrint('❌ Error obteniendo PQRS admin: $e');
+      rethrow;
+    }
+  }
+
+  // ============================================================
+  // ADMIN: ACTUALIZAR RESPUESTA Y ESTADO
+  // ============================================================
+  static Future<void> actualizarRespuesta(String codigoRef, String nuevoEstado, String respuesta) async {
+    try {
+      await _supabase
+          .from(_tabla)
+          .update({
+            'estado': nuevoEstado,
+            'respuesta': respuesta,
+            'fecha_actualizacion': DateTime.now().toIso8601String(),
+          })
+          .eq('codigo_referencia', codigoRef);
+    } catch (e) {
+      debugPrint('❌ Error actualizando PQRS admin: $e');
+      rethrow;
+    }
   }
 }

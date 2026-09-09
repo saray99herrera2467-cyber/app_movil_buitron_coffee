@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CarritoService {
@@ -33,7 +34,7 @@ class CarritoService {
 
       return respuesta;
     } catch (e) {
-      print('Error al cargar carrito: $e');
+      debugPrint('Error al cargar carrito: $e');
       return [];
     }
   }
@@ -70,7 +71,7 @@ class CarritoService {
       }
       return true;
     } catch (e) {
-      print('Error al agregar: $e');
+      debugPrint('Error al agregar: $e');
       return false;
     }
   }

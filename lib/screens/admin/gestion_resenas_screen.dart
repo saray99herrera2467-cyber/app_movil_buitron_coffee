@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import '../../services/resena_service.dart';
 
 class GestionResenasScreen extends StatefulWidget {
   const GestionResenasScreen({super.key});
@@ -9,9 +9,6 @@ class GestionResenasScreen extends StatefulWidget {
 }
 
 class _GestionResenasScreenState extends State<GestionResenasScreen> {
-  // ==========================================================
-  // COLORES BUITRÓN COFFEE
-  // ==========================================================
   static const Color cafePrincipal = Color(0xFF4E342E);
   static const Color cafeClaro = Color(0xFF795548);
   static const Color crema = Color(0xFFF5EFE6);
@@ -38,16 +35,14 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
       _error = null;
     });
     try {
-      final res = await ApiService.supabase
-          .from(ApiService.tablaResenas)
-          .select('*, producto(*), usuario(*)') 
-          .order('id', ascending: false);
-
+      final res = await ResenaService.obtenerTodasAdmin();
+      if (!mounted) return;
       setState(() {
-        _resenas = res as List<dynamic>;
+        _resenas = res;
         _cargando = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Error al cargar las reseñas: $e';
         _cargando = false;
@@ -57,11 +52,8 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
 
   Future<void> _actualizarEstado(int id, String estado) async {
     try {
-      await ApiService.supabase
-          .from(ApiService.tablaResenas)
-          .update({'estado': estado})
-          .eq('id', id);
-
+      await ResenaService.actualizarEstado(id, estado);
+      if (!mounted) return;
       setState(() {
         _exito = estado == 'aprobada'
             ? 'Reseña aprobada correctamente'
@@ -72,6 +64,7 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
         if (mounted) setState(() => _exito = null);
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = 'Error al actualizar: $e');
     }
   }
@@ -168,7 +161,6 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
                   final resena = _resenasFiltradas[index];
                   final estado = resena['estado'] as String? ?? 'pendiente';
                   
-                  // Obtener datos del producto y usuario con seguridad
                   final rawProducto = resena['producto'];
                   final producto = rawProducto is List && rawProducto.isNotEmpty 
                       ? rawProducto[0] 
@@ -194,7 +186,7 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  producto?['nombre'] ?? 'Producto no encontrado',
+                                  producto?['nombre_producto'] ?? producto?['nombre'] ?? 'Producto no encontrado',
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cafePrincipal),
                                 ),
                               ),
@@ -209,16 +201,16 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(Icons.person, size: 16, color: dorado),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    usuario?['nombre_usuario'] ?? resena['nombre_usuario'] ?? 'Anónimo', 
-                                    style: const TextStyle(color: textoSuave, fontSize: 13, fontWeight: FontWeight.bold)
-                                  ),
-                                ],
+                          Row(
+                            children: [
+                              const Icon(Icons.person, size: 16, color: dorado),
+                              const SizedBox(width: 6),
+                              Text(
+                                usuario?['nombre_usuario'] ?? resena['nombre_usuario'] ?? 'Anónimo', 
+                                style: const TextStyle(color: textoSuave, fontSize: 13, fontWeight: FontWeight.bold)
                               ),
+                            ],
+                          ),
                           const Divider(height: 25),
                           _estrellas(resena['calificacion'] ?? 0),
                           const SizedBox(height: 10),

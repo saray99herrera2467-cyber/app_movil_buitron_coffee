@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_service.dart';
 
@@ -36,7 +37,7 @@ class HistorialService {
 
       return pedidos;
     } catch (e) {
-      print('Error al cargar pedidos: $e');
+      debugPrint('Error al cargar pedidos: $e');
       return [];
     }
   }
@@ -46,13 +47,35 @@ class HistorialService {
     try {
       final detalles = await _supabase
           .from('detalle_pedido')
-          .select('*, producto(*)')
+          .select('*, id_producto(*)') // ✅ Usamos el nombre de la columna directamente
           .eq('id_pedido', idPedido);
 
       return detalles;
     } catch (e) {
-      print('Error al cargar detalles: $e');
+      debugPrint('Error al cargar detalles: $e');
       return [];
+    }
+  }
+
+  // 🗑️ ELIMINAR PEDIDO
+  static Future<bool> eliminarPedido(int idPedido) async {
+    try {
+      // 1. Eliminar primero los detalles (por restricción de clave foránea)
+      await _supabase
+          .from('detalle_pedido')
+          .delete()
+          .eq('id_pedido', idPedido);
+
+      // 2. Eliminar el encabezado del pedido
+      await _supabase
+          .from('pedido')
+          .delete()
+          .eq('id', idPedido);
+
+      return true;
+    } catch (e) {
+      debugPrint('Error al eliminar pedido: $e');
+      return false;
     }
   }
 }

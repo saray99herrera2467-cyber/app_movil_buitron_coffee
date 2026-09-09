@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/perfil_service.dart';
 import '../services/auth_service.dart';
@@ -24,6 +23,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
   // ============================================================
 
   final TextEditingController _nombreController =
+  TextEditingController();
+
+  final TextEditingController _apellidoController =
+  TextEditingController();
+
+  final TextEditingController _documentoController =
   TextEditingController();
 
   final TextEditingController _correoController =
@@ -71,6 +76,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
   @override
   void dispose() {
     _nombreController.dispose();
+    _apellidoController.dispose();
+    _documentoController.dispose();
     _correoController.dispose();
     _telefonoController.dispose();
     _direccionController.dispose();
@@ -101,6 +108,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
       if (datos != null) {
         _nombreController.text = (datos['nombre_usuario'] ?? '').toString();
+        _apellidoController.text = (datos['apellido'] ?? '').toString();
+        _documentoController.text = (datos['documento'] ?? '').toString();
         _telefonoController.text = (datos['telefono'] ?? '').toString();
         _direccionController.text = (datos['direccion'] ?? '').toString();
       }
@@ -209,6 +218,91 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                     prefixIcon: const Icon(
                       Icons.person_outline,
+                      color: cafePrincipal,
+                    ),
+
+                    filled: true,
+                    fillColor: Colors.white,
+
+                    border: OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+
+                    focusedBorder:
+                    OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(10),
+                      borderSide:
+                      const BorderSide(
+                        color: dorado,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                // ==================================================
+                // APELLIDO
+                // ==================================================
+
+                TextField(
+                  controller: _apellidoController,
+
+                  decoration: InputDecoration(
+                    labelText: 'Apellido',
+                    labelStyle: const TextStyle(
+                      color: textoSuave,
+                    ),
+
+                    prefixIcon: const Icon(
+                      Icons.badge_outlined,
+                      color: cafePrincipal,
+                    ),
+
+                    filled: true,
+                    fillColor: Colors.white,
+
+                    border: OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+
+                    focusedBorder:
+                    OutlineInputBorder(
+                      borderRadius:
+                      BorderRadius.circular(10),
+                      borderSide:
+                      const BorderSide(
+                        color: dorado,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                // ==================================================
+                // DOCUMENTO
+                // ==================================================
+
+                TextField(
+                  controller: _documentoController,
+                  keyboardType: TextInputType.number,
+
+                  decoration: InputDecoration(
+                    labelText: 'Documento',
+                    labelStyle: const TextStyle(
+                      color: textoSuave,
+                    ),
+
+                    prefixIcon: const Icon(
+                      Icons.assignment_ind_outlined,
                       color: cafePrincipal,
                     ),
 
@@ -424,6 +518,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final nombre =
     _nombreController.text.trim();
 
+    final apellido =
+    _apellidoController.text.trim();
+
+    final documento =
+    _documentoController.text.trim();
+
     final telefono =
     _telefonoController.text.trim();
 
@@ -455,8 +555,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
       await _perfilService.guardarPerfilCompleto(
         correo: correo,
         nombre: nombre,
+        apellido: apellido,
         telefono: telefono,
         direccion: direccion,
+        documento: documento,
       );
 
       // ✅ Refrescar los datos en pantalla
@@ -668,6 +770,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       .isEmpty
                       ? 'Sin teléfono'
                       : _telefonoController
+                      .text,
+                ),
+
+                const SizedBox(height: 12),
+
+                _datoPerfil(
+                  Icons.assignment_ind_outlined,
+                  'Documento',
+                  _documentoController
+                      .text
+                      .isEmpty
+                      ? 'Sin documento'
+                      : _documentoController
                       .text,
                 ),
 

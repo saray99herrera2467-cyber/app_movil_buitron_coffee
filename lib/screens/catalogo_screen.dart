@@ -12,10 +12,10 @@ import 'carrito_screen.dart';
 import 'historial_screen.dart';
 import 'login_screen.dart';
 import 'mapa_screen.dart';
-import 'pagos_screen.dart';
 import 'perfil_screen.dart';
 import 'resenas_screen.dart';
 import 'pqrs_screen.dart';
+import 'detalle_producto_screen.dart';
 
 // ============================================================
 // COLORES BUITRÓN COFFEE
@@ -358,9 +358,22 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   // ==========================================================
 
   void _agregarAlCarrito(Producto producto) {
-    context
-        .read<CarritoProvider>()
-        .agregarProducto(producto);
+    final error = context.read<CarritoProvider>().agregarProducto(producto);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text(
+            error,
+            style: const TextStyle(color: Colors.white),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
@@ -672,50 +685,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
                 const Divider(
                   color: cafeClaro,
-                ),
-
-                // =================================================
-                // ACERCA DE
-                // =================================================
-
-                ListTile(
-                  leading: const Icon(
-                    Icons.info_outline,
-                    color: cafePrincipal,
-                  ),
-
-                  title: const Text(
-                    'Acerca de',
-                    style: TextStyle(
-                      color: textoOscuro,
-                    ),
-                  ),
-
-                  onTap: () {
-                    Navigator.pop(context);
-
-                    showAboutDialog(
-                      context: context,
-
-                      applicationName:
-                      'Buitrón Coffee',
-
-                      applicationVersion:
-                      '1.0.0',
-
-                      applicationIcon:
-                      const Icon(
-                        Icons.coffee,
-                        color: cafePrincipal,
-                      ),
-
-                      children: const [
-                        Text(
-                          'Aplicación para la venta de café colombiano.',
-                        ),
-                      ],
-                    );
-                  },
                 ),
 
                 // =================================================
@@ -1117,6 +1086,15 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     producto,
                   ),
 
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetalleProductoScreen(producto: producto),
+                      ),
+                    );
+                  },
+
                   onAgregar: () {
                     _agregarAlCarrito(
                       producto,
@@ -1190,6 +1168,7 @@ class ProductoCard extends StatelessWidget {
   final Producto producto;
   final Widget imagenWidget;
   final VoidCallback onAgregar;
+  final VoidCallback onTap;
 
   const ProductoCard({
     super.key,
@@ -1199,12 +1178,16 @@ class ProductoCard extends StatelessWidget {
     required this.imagenWidget,
 
     required this.onAgregar,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: cremaClaro,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Card(
+        color: cremaClaro,
 
       elevation: 3,
 
@@ -1332,8 +1315,20 @@ class ProductoCard extends StatelessWidget {
               ),
             ),
 
+            const SizedBox(height: 4),
+
+            // STOCK
+            Text(
+              producto.stock > 0 ? 'Stock: ${producto.stock}' : 'Agotado',
+              style: TextStyle(
+                fontSize: 11,
+                color: producto.stock > 0 ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
             const SizedBox(
-              height: 8,
+              height: 4,
             ),
 
             // =================================================
@@ -1383,6 +1378,7 @@ class ProductoCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

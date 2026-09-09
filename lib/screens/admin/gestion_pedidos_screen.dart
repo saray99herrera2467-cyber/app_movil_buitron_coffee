@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../services/api_service.dart';
+import '../../services/pedido_service.dart';
 
 class GestionPedidosScreen extends StatefulWidget {
   const GestionPedidosScreen({super.key});
@@ -10,9 +9,6 @@ class GestionPedidosScreen extends StatefulWidget {
 }
 
 class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
-  // ==========================================================
-  // COLORES BUITRÓN COFFEE
-  // ==========================================================
   static const Color cafePrincipal = Color(0xFF4E342E);
   static const Color cafeClaro = Color(0xFF795548);
   static const Color crema = Color(0xFFF5EFE6);
@@ -41,17 +37,15 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
       _error = null;
     });
     try {
-      final res = await ApiService.supabase
-          .from(ApiService.tablaPedidos)
-          .select('*, usuario(*)') // Asumiendo relación con tabla usuario
-          .order('id', ascending: false);
-      
+      final res = await PedidoService.obtenerTodosAdmin();
+      if (!mounted) return;
       setState(() {
-        _pedidos = res as List<dynamic>;
+        _pedidos = res;
         _aplicarFiltros();
         _cargando = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Error al cargar los pedidos: $e';
         _cargando = false;
@@ -62,7 +56,7 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
   void _aplicarFiltros() {
     var filtrados = List<dynamic>.from(_pedidos);
     if (_filtroEstado != 'todos') {
-      filtrados = filtrados.where((p) => p['estado'] == _filtroEstado).toList();
+      filtrados = filtrados.where((p) => p['estado'].toString().toLowerCase() == _filtroEstado.toLowerCase()).toList();
     }
     if (_busqueda.trim().isNotEmpty) {
       final q = _busqueda.toLowerCase();
@@ -81,20 +75,15 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
 
   Future<void> _actualizarEstado(int pedidoId, String nuevoEstado) async {
     try {
-      // Estandarizar a MAYÚSCULAS para evitar errores de sincronización
-      final estadoMayus = nuevoEstado.toUpperCase();
-
-      await ApiService.supabase
-          .from(ApiService.tablaPedidos)
-          .update({'estado': estadoMayus})
-          .eq('id', pedidoId);
-      
-      setState(() => _exito = 'Pedido #$pedidoId actualizado a $estadoMayus');
+      await PedidoService.actualizarEstado(pedidoId, nuevoEstado);
+      if (!mounted) return;
+      setState(() => _exito = 'Pedido #$pedidoId actualizado a $nuevoEstado');
       await _cargarPedidos();
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) setState(() => _exito = null);
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = 'Error al actualizar el estado: $e');
     }
   }
@@ -117,15 +106,12 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
     }
   }
 
-  Future<void> _verDetalle(int pedidoId) async {
+  Future<void> _verDetalle(dynamic pedido) async {
+    final int pedidoId = pedido['id'];
     try {
-      final res = await ApiService.supabase
-          .from(ApiService.tablaDetallePedido)
-          .select('*, productos(*)') // Asumiendo relación con productos
-          .eq('id_pedido', pedidoId);
-      
+      final res = await PedidoService.obtenerDetalleConProductos(pedidoId);
       if (!mounted) return;
-      _mostrarDetalle(pedidoId, res as List<dynamic>);
+      _mostrarDetalle(pedido, res);
     } catch (e) {
       _mostrarError('Error al cargar el detalle: $e');
     }
@@ -135,7 +121,12 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text(mensaje)));
   }
 
-  void _mostrarDetalle(int pedidoId, List<dynamic> items) {
+  void _mostrarDetalle(dynamic pedido, List<dynamic> items) {
+    final int pedidoId = pedido['id'];
+    final usuario = pedido['usuario'];
+    final TextEditingController guiaCtrl = TextEditingController(text: (pedido['numero_guia'] ?? '').toString());
+    final TextEditingController transportadoraCtrl = TextEditingController(text: (pedido['transportadora'] ?? '').toString());
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -143,8 +134,8 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
+          initialChildSize: 0.85,
+          maxChildSize: 0.95,
           expand: false,
           builder: (context, scrollController) {
             return Padding(
@@ -161,29 +152,99 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                     ],
                   ),
                   const Divider(color: dorado),
+                  
+                  const Text('INFORMACIÓN DEL CLIENTE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: dorado)),
+                  const SizedBox(height: 8),
+                  Text('Nombre: ${usuario?['nombre_usuario'] ?? 'N/A'} ${usuario?['apellido'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text('Email: ${usuario?['correo'] ?? 'N/A'}'),
+                  Text('Teléfono: ${usuario?['telefono'] ?? 'N/A'}'),
+                  Text('Dirección: ${usuario?['direccion'] ?? 'N/A'}'),
+                  const SizedBox(height: 4),
+                  Text('Método de Pago: ${pedido['metodo_pago'] ?? 'No especificado'}', 
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal)),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // SECCIÓN DE SEGUIMIENTO
+                  const Text('SEGUIMIENTO DE ENVÍO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: dorado)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: guiaCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Número de Guía', 
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: transportadoraCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Transportadora', 
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          await PedidoService.actualizarSeguimiento(pedidoId, guiaCtrl.text.trim(), transportadoraCtrl.text.trim());
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seguimiento actualizado')));
+                            _cargarPedidos(); // ✅ Recargamos la lista para ver el cambio
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                          }
+                        }
+                      }, 
+                      style: ElevatedButton.styleFrom(backgroundColor: cafePrincipal, foregroundColor: Colors.white),
+                      child: const Text('GUARDAR SEGUIMIENTO'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                  const Text('PRODUCTOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: dorado)),
+                  const SizedBox(height: 8),
+                  
                   Expanded(
                     child: ListView.builder(
                       controller: scrollController,
                       itemCount: items.length,
                       itemBuilder: (context, i) {
                         final item = items[i];
-                        final producto = item['productos'];
+                        final producto = item['id_producto'];
+                        final String nombreProd = (producto?['nombre_producto'] ?? producto?['nombre'] ?? 'Producto').toString();
+                        
                         final cantidad = item['cantidad'] ?? 0;
                         final precio = (item['precio_unitario'] ?? 0) as num;
                         final subtotal = cantidad * precio;
                         return ListTile(
+                          contentPadding: EdgeInsets.zero,
                           leading: Container(
-                            width: 48,
-                            height: 48,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(color: crema, borderRadius: BorderRadius.circular(10)),
                             child: const Icon(Icons.coffee, color: cafePrincipal),
                           ),
-                          title: Text(producto?['nombre'] ?? 'Producto no encontrado', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(nombreProd, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           subtitle: Text('$cantidad x \$${precio.toStringAsFixed(0)}'),
                           trailing: Text('\$${subtotal.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal)),
                         );
                       },
                     ),
+                  ),
+                  const Divider(color: dorado),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('TOTAL:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('\$${(pedido['total'] ?? 0).toString()}', style: const TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal, fontSize: 20)),
+                    ],
                   ),
                 ],
               ),
@@ -285,9 +346,9 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
               child: Row(
                 children: [
                   _chipFiltro('Todos', 'todos', _pedidos.length),
-                  _chipFiltro('Pendientes', 'Pendiente', _contar('Pendiente')),
-                  _chipFiltro('Entregados', 'Entregado', _contar('Entregado')),
-                  _chipFiltro('Cancelados', 'Cancelado', _contar('Cancelado')),
+                  _chipFiltro('Pendientes', 'pendiente', _contar('pendiente')),
+                  _chipFiltro('Entregados', 'entregado', _contar('entregado')),
+                  _chipFiltro('Cancelados', 'cancelado', _contar('cancelado')),
                 ],
               ),
             ),
@@ -301,7 +362,7 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                 itemBuilder: (context, index) {
                   final pedido = _pedidosFiltrados[index];
                   final usuario = pedido['usuario'];
-                  final estado = pedido['estado'] as String? ?? 'Pendiente';
+                  final estado = pedido['estado'] as String? ?? 'pendiente';
                   final id = pedido['id'] as int;
                   return Card(
                     color: cremaClaro,
@@ -351,7 +412,7 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                             children: [
                               Expanded(
                                 child: DropdownButtonFormField<String>(
-                                  value: ['Pendiente', 'Entregado', 'Cancelado'].contains(estado) ? estado : 'Pendiente',
+                                  initialValue: ['pendiente', 'entregado', 'cancelado'].contains(estado.toLowerCase()) ? estado.toLowerCase() : 'pendiente',
                                   decoration: InputDecoration(
                                     isDense: true,
                                     filled: true,
@@ -359,12 +420,12 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                                   ),
                                   items: const [
-                                    DropdownMenuItem(value: 'Pendiente', child: Text('Pendiente')),
-                                    DropdownMenuItem(value: 'Entregado', child: Text('Entregado')),
-                                    DropdownMenuItem(value: 'Cancelado', child: Text('Cancelado')),
+                                    DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
+                                    DropdownMenuItem(value: 'entregado', child: Text('Entregado')),
+                                    DropdownMenuItem(value: 'cancelado', child: Text('Cancelado')),
                                   ],
                                   onChanged: (nuevo) {
-                                    if (nuevo != null && nuevo != estado) {
+                                    if (nuevo != null && nuevo.toLowerCase() != estado.toLowerCase()) {
                                       _confirmarCambioEstado(id, nuevo);
                                     }
                                   },
@@ -372,7 +433,7 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                               ),
                               const SizedBox(width: 10),
                               ElevatedButton(
-                                onPressed: () => _verDetalle(id),
+                                onPressed: () => _verDetalle(pedido),
                                 style: ElevatedButton.styleFrom(backgroundColor: dorado, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                                 child: const Text('DETALLE'),
                               ),

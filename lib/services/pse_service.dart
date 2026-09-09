@@ -1,6 +1,7 @@
 // lib/services/pse_service.dart
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'api_service.dart';
 
 class BancoPse {
   final String codigo;
@@ -9,7 +10,7 @@ class BancoPse {
 }
 
 class PseService {
-  static final SupabaseClient _supabase = Supabase.instance.client;
+  static final SupabaseClient _supabase = ApiService.supabase;
 
   /// Lista de bancos habilitados para PSE (puedes ampliarla o
   /// consultarla dinámicamente al endpoint de ePayco si prefieres).
@@ -65,6 +66,11 @@ class PseService {
       throw Exception('Error al crear el pago PSE: ${response.data}');
     }
 
-    return jsonDecode(response.data is String ? response.data : jsonEncode(response.data));
+    // response.data ya suele ser un Map si la función devuelve JSON
+    if (response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+
+    return jsonDecode(response.data.toString());
   }
 }

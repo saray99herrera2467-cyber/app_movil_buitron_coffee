@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
-import 'catalogo_screen.dart';
-import 'admin/admin_panel_screen.dart';
+import 'verificacion_screen.dart';
 import '../services/auth_service.dart'; 
 
 class RegistroPage extends StatefulWidget {
@@ -20,6 +19,9 @@ class _RegistroPageState extends State<RegistroPage> {
   TextEditingController();
 
   final TextEditingController apellidoController =
+  TextEditingController();
+
+  final TextEditingController documentoController =
   TextEditingController();
 
   final TextEditingController correoController =
@@ -60,6 +62,9 @@ class _RegistroPageState extends State<RegistroPage> {
     String apellido =
     apellidoController.text.trim();
 
+    String documento =
+    documentoController.text.trim();
+
     String correo =
     correoController.text.trim();
 
@@ -76,24 +81,40 @@ class _RegistroPageState extends State<RegistroPage> {
     // VERIFICAR CAMPOS
     // =======================================================
 
-    if (nombre.isEmpty ||
-        apellido.isEmpty ||
-        correo.isEmpty ||
-        direccion.isEmpty ||
-        telefono.isEmpty ||
-        clave.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: cafePrincipal,
-          content: Text(
-            'Por favor, completa todos los campos',
-            style: TextStyle(
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
+    if (nombre.isEmpty) { _mostrarMensaje('El nombre es obligatorio'); return; }
+    if (apellido.isEmpty) { _mostrarMensaje('El apellido es obligatorio'); return; }
+    if (documento.isEmpty) { _mostrarMensaje('El documento es obligatorio'); return; }
+    if (correo.isEmpty) { _mostrarMensaje('El correo es obligatorio'); return; }
+    if (direccion.isEmpty) { _mostrarMensaje('La dirección es obligatorio'); return; }
+    if (telefono.isEmpty) { _mostrarMensaje('El teléfono es obligatorio'); return; }
+    if (clave.isEmpty) { _mostrarMensaje('La contraseña es obligatoria'); return; }
 
+    // 📌 RESTRICTIÓN: Documento max 11
+    if (documento.length > 11) {
+      _mostrarMensaje('El documento no puede tener más de 11 dígitos');
+      return;
+    }
+
+    // 📌 RESTRICTIÓN: Teléfono max 10
+    if (telefono.length > 10) {
+      _mostrarMensaje('El teléfono no puede tener más de 10 dígitos');
+      return;
+    }
+
+    // 📌 VALIDACIÓN DE CORREO (Formato real)
+    final bool correoValido = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(correo);
+    if (!correoValido) {
+      _mostrarMensaje('Ingresa un correo electrónico válido');
+      return;
+    }
+
+    // 📌 VALIDACIÓN DE CONTRASEÑA (8 caracteres, letras y números)
+    if (clave.length < 8) {
+      _mostrarMensaje('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$').hasMatch(clave)) {
+      _mostrarMensaje('La contraseña debe incluir letras y números');
       return;
     }
 
@@ -106,9 +127,10 @@ class _RegistroPageState extends State<RegistroPage> {
     // =======================================================
 
     try {
-      final usuario = await AuthService.registrar(
+      await AuthService.registrar(
         nombreUsuario: nombre,
         apellido: apellido,
+        documento: documento,
         correo: correo,
         clave: clave,
         telefono: telefono,
@@ -118,31 +140,26 @@ class _RegistroPageState extends State<RegistroPage> {
       if (!mounted) return;
 
       // =====================================================
-      // REGISTRO EXITOSO - REDIRIGIR SEGÚN ROL
+      // REGISTRO EXITOSO - REDIRIGIR A VERIFICACIÓN
       // =====================================================
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: cafePrincipal,
           content: Text(
-            'Registro realizado correctamente',
+            'Registro realizado. Por favor verifica tu correo.',
             style: TextStyle(
               color: Colors.white,
             ),
           ),
+          behavior: SnackBarBehavior.floating,
         ),
       );
-
-      final idRol = usuario['id_rol'] as int? ?? 1;
-      
-      Widget pantallaDestino = idRol == 2 
-          ? const AdminPanelScreen() 
-          : const CatalogoScreen();
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => pantallaDestino,
+          builder: (context) => VerificacionScreen(email: correo),
         ),
       );
     } catch (e) {
@@ -170,6 +187,16 @@ class _RegistroPageState extends State<RegistroPage> {
         });
       }
     }
+  }
+
+  void _mostrarMensaje(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: cafePrincipal,
+        content: Text(msg, style: const TextStyle(color: Colors.white)),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   // =========================================================
@@ -333,6 +360,21 @@ class _RegistroPageState extends State<RegistroPage> {
                 const SizedBox(height: 16),
 
                 // =================================================
+                // DOCUMENTO (max 11)
+                // =================================================
+
+                _campoTexto(
+                  controller: documentoController,
+                  labelText: 'Número de documento',
+                  hintText: 'Ej: 1023456789',
+                  icono: Icons.assignment_ind_outlined,
+                  tipo: TextInputType.number,
+                  maxL: 11,
+                ),
+
+                const SizedBox(height: 16),
+
+                // =================================================
                 // CORREO
                 // =================================================
 
@@ -367,9 +409,10 @@ class _RegistroPageState extends State<RegistroPage> {
                 _campoTexto(
                   controller: telefonoController,
                   labelText: 'Teléfono',
-                  hintText: 'Teléfono',
+                  hintText: 'Ej: 3101234567',
                   icono: Icons.phone_outlined,
                   tipo: TextInputType.phone,
+                  maxL: 10,
                 ),
 
                 const SizedBox(height: 16),
@@ -580,15 +623,17 @@ class _RegistroPageState extends State<RegistroPage> {
     required String hintText,
     required IconData icono,
     required TextInputType tipo,
+    int? maxL, // 👈 Nuevo parámetro
   }) {
     return TextField(
       controller: controller,
 
       keyboardType: tipo,
+      maxLength: maxL, // 👈 Aplicar longitud
 
       decoration: InputDecoration(
         labelText: labelText,
-
+        counterText: '', // 👈 Ocultar contador inferior
         hintText: hintText,
 
         labelStyle: const TextStyle(

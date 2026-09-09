@@ -6,6 +6,9 @@ class Producto {
   final String? imagen;
   final String categoria;
   final bool estado;
+  final int stock;
+  final double calificacionPromedio;
+  final int totalResenas;
 
   Producto({
     required this.id,
@@ -15,85 +18,76 @@ class Producto {
     this.imagen,
     this.categoria = '',
     this.estado = true,
+    this.stock = 0,
+    this.calificacionPromedio = 0.0,
+    this.totalResenas = 0,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) {
     // ID
     int id = 0;
-
     if (json['id'] is int) {
       id = json['id'];
     } else {
       id = int.tryParse('${json['id']}') ?? 0;
     }
 
-    // NOMBRE
-    final String nombre =
-    (json['nombre'] ??
-        json['nombre_producto'] ??
-        json['producto'] ??
-        '')
-        .toString();
+    // NOMBRE (Soporta ambos para compatibilidad)
+    final String nombre = (json['nombre_producto'] ?? 
+                           json['nombre'] ?? 
+                           json['producto'] ?? 
+                           '').toString();
 
     // DESCRIPCIÓN
-    String? descripcion;
-
-    if (json['descripcion'] != null) {
-      descripcion = json['descripcion'].toString();
-    } else if (json['descripción'] != null) {
-      descripcion = json['descripción'].toString();
-    }
+    String? descripcion = (json['descripcion'] ?? json['descripción'])?.toString();
 
     // PRECIO
     double precio = 0.0;
-
     if (json['precio'] is num) {
       precio = (json['precio'] as num).toDouble();
     } else {
-      precio = double.tryParse(
-        '${json['precio']}'.replaceAll(',', '.'),
-      ) ??
-          0.0;
+      precio = double.tryParse('${json['precio']}'.replaceAll(',', '.')) ?? 0.0;
     }
 
-    // IMAGEN (Flexibilidad máxima para detectar la columna)
+    // IMAGEN
     String? imagen;
-
-    final posiblesCamposImagen = [
-      'imagen', 'url_imagen', 'foto', 'imagen_url', 'img', 'thumbnail',
-      'Imagen', 'Url_imagen', 'Foto', 'Imagen_url', 'Img', 'Thumbnail',
-      'nombre_imagen', 'nombre_archivo', 'archivo_imagen'
-    ];
-
+    final posiblesCamposImagen = ['imagen', 'url_imagen', 'foto', 'imagen_url', 'img'];
     for (final campo in posiblesCamposImagen) {
-      if (json[campo] != null) {
-        final valor = json[campo].toString().trim();
-        if (valor.isNotEmpty) {
-          imagen = valor;
-          break;
-        }
+      if (json[campo] != null && json[campo].toString().trim().isNotEmpty) {
+        imagen = json[campo].toString().trim();
+        break;
       }
     }
 
     // CATEGORÍA
-    final String categoria =
-    (json['categoria'] ??
-        json['categoría'] ??
-        json['category'] ??
-        '')
-        .toString();
+    final String categoria = (json['categoria'] ?? json['categoría'] ?? '').toString();
 
     // ESTADO
     bool estado = true;
-
     if (json['estado'] is bool) {
       estado = json['estado'];
     } else if (json['estado'] != null) {
       final valor = json['estado'].toString().toLowerCase();
+      estado = valor != 'false' && valor != '0' && valor != 'inactivo';
+    }
 
-      estado = valor != 'false' &&
-          valor != '0' &&
-          valor != 'inactivo';
+    // STOCK
+    int stock = 0;
+    if (json['stock'] is int) {
+      stock = json['stock'];
+    } else {
+      stock = int.tryParse('${json['stock']}') ?? 0;
+    }
+
+    // CALIFICACIÓN Y RESEÑAS
+    double calProm = 0.0;
+    if (json['calificacion_promedio'] is num) {
+      calProm = (json['calificacion_promedio'] as num).toDouble();
+    }
+
+    int totRes = 0;
+    if (json['total_resenas'] is int) {
+      totRes = json['total_resenas'];
     }
 
     return Producto(
@@ -104,18 +98,23 @@ class Producto {
       imagen: imagen,
       categoria: categoria,
       estado: estado,
+      stock: stock,
+      calificacionPromedio: calProm,
+      totalResenas: totRes,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'nombre': nombre,
+      'nombre_producto': nombre, // ✅ Mapeo correcto para Supabase
       'descripcion': descripcion,
       'precio': precio,
       'imagen': imagen,
       'categoria': categoria,
       'estado': estado,
+      'stock': stock,
+      // calificacion_promedio y total_resenas suelen ser calculados por la DB, 
+      // pero los incluimos si es necesario enviarlos.
     };
   }
 
@@ -127,6 +126,9 @@ class Producto {
     String? imagen,
     String? categoria,
     bool? estado,
+    int? stock,
+    double? calificacionPromedio,
+    int? totalResenas,
   }) {
     return Producto(
       id: id ?? this.id,
@@ -136,6 +138,9 @@ class Producto {
       imagen: imagen ?? this.imagen,
       categoria: categoria ?? this.categoria,
       estado: estado ?? this.estado,
+      stock: stock ?? this.stock,
+      calificacionPromedio: calificacionPromedio ?? this.calificacionPromedio,
+      totalResenas: totalResenas ?? this.totalResenas,
     );
   }
 }

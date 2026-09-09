@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/historial_service.dart';
 import 'catalogo_screen.dart';
+import 'comprobante_pago_screen.dart';
 
 // ============================================================
 // COLORES BUITRÓN COFFEE
@@ -169,6 +170,169 @@ class _HistorialScreenState extends State<HistorialScreen> {
     }
   }
 
+  Future<void> _eliminarPedido(int idPedido) async {
+    final bool? confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: cremaClaro,
+        title: const Text('¿Eliminar del historial?', style: TextStyle(color: cafePrincipal)),
+        content: const Text('Esta acción borrará el registro del pedido permanentemente.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('CANCELAR', style: TextStyle(color: cafeClaro)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('ELIMINAR', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      setState(() => _cargando = true);
+      final exito = await HistorialService.eliminarPedido(idPedido);
+      
+      if (mounted) {
+        if (exito) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pedido eliminado correctamente')),
+          );
+          _cargarPedidos();
+        } else {
+          setState(() => _cargando = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo eliminar el pedido'), backgroundColor: Colors.redAccent),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _mostrarDetallePedido(int idPedido, dynamic pedido) async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cremaClaro,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) {
+        return FutureBuilder<List<dynamic>>(
+          future: HistorialService.obtenerDetallePedido(idPedido),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(height: 300, child: Center(child: CircularProgressIndicator(color: cafePrincipal)));
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const SizedBox(height: 200, child: Center(child: Text('No se pudo cargar el detalle')));
+            }
+
+            final items = snapshot.data!;
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(width: 40, height: 5, decoration: BoxDecoration(color: cafeClaro, borderRadius: BorderRadius.circular(10))),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Detalle del Pedido #$idPedido', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: cafePrincipal)),
+                  const SizedBox(height: 10),
+                  Text('Fecha: ${_formatearFecha(pedido['fecha'])}', style: const TextStyle(color: textoSuave, fontSize: 14)),
+                  const SizedBox(height: 20),
+                  
+                  // LINEA DE TIEMPO (SEGUIMIENTO)
+                  _LineaTiempoSeguimiento(estado: pedido['estado']?.toString() ?? 'Pendiente'),
+                  
+                  const SizedBox(height: 20),
+                  
+                  if (pedido['numero_guia'] != null && pedido['numero_guia'].toString().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('INFORMACIÓN DE ENVÍO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.green)),
+                          const SizedBox(height: 4),
+                          Text('Transportadora: ${pedido['transportadora'] ?? 'N/A'}', style: const TextStyle(fontSize: 13)),
+                          Text('Número de Guía: ${pedido['numero_guia']}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const Divider(height: 30, color: dorado),
+                  
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      itemBuilder: (context, i) {
+                        final item = items[i];
+                        final prod = item['id_producto']; // ✅ Cambiado de 'producto' a 'id_producto'
+                        final String nombreProd = (prod?['nombre'] ?? prod?['nombre_producto'] ?? prod?['producto'] ?? 'Producto').toString();
+                        
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(nombreProd, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text('${item['cantidad']} x \$${item['precio_unitario'] ?? '0'}'),
+                          trailing: Text('\$${((item['cantidad'] ?? 0) * (item['precio_unitario'] ?? 0)).toStringAsFixed(0)}', 
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal)),
+                        );
+                      },
+                    ),
+                  ),
+                  const Divider(height: 30, color: dorado),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('TOTAL', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textoOscuro)),
+                      Text('\$${pedido['total'] ?? '0.00'}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: cafePrincipal)),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  
+                  // Botón para ver comprobante
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ComprobantePagoScreen(
+                              pedido: Map<String, dynamic>.from(pedido),
+                              items: items,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.receipt_long),
+                      label: const Text('VER COMPROBANTE / FACTURA', style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: cafePrincipal,
+                        side: const BorderSide(color: cafePrincipal),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // ==========================================================
   // BUILD
   // ==========================================================
@@ -252,12 +416,11 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
             return _PedidoCard(
               pedido: pedido,
-              formatearFecha:
-              _formatearFecha,
-              estadoPedido:
-              _estadoPedido,
-              colorEstado:
-              _colorEstado,
+              formatearFecha: _formatearFecha,
+              estadoPedido: _estadoPedido,
+              colorEstado: _colorEstado,
+              onEliminar: () => _eliminarPedido(pedido['id']),
+              onTap: () => _mostrarDetallePedido(pedido['id'], pedido),
             );
           },
         ),
@@ -392,12 +555,16 @@ class _PedidoCard extends StatelessWidget {
   final String Function(String) formatearFecha;
   final String Function(String?) estadoPedido;
   final Color Function(String?) colorEstado;
+  final VoidCallback onEliminar;
+  final VoidCallback onTap;
 
   const _PedidoCard({
     required this.pedido,
     required this.formatearFecha,
     required this.estadoPedido,
     required this.colorEstado,
+    required this.onEliminar,
+    required this.onTap,
   });
 
   @override
@@ -406,8 +573,11 @@ class _PedidoCard extends StatelessWidget {
         pedido['estado']?.toString() ??
             'Desconocido';
 
-    return Card(
-      color: cremaClaro,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        color: cremaClaro,
       elevation: 3,
 
       margin: const EdgeInsets.only(
@@ -529,6 +699,16 @@ class _PedidoCard extends StatelessWidget {
                       colorEstado(estado),
                     ),
                   ),
+                ),
+
+                const SizedBox(width: 8),
+
+                IconButton(
+                  onPressed: onEliminar,
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
+                  tooltip: 'Eliminar pedido',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
@@ -676,6 +856,103 @@ class _PedidoCard extends StatelessWidget {
           ],
         ),
       ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// WIDGET LINEA DE TIEMPO (SEGUIMIENTO)
+// ============================================================
+
+class _LineaTiempoSeguimiento extends StatelessWidget {
+  final String estado;
+
+  const _LineaTiempoSeguimiento({required this.estado});
+
+  int get _pasoActual {
+    switch (estado.toUpperCase()) {
+      case 'PENDIENTE': return 0;
+      case 'PAGADO': return 1;
+      case 'ENVIADO': return 2;
+      case 'ENTREGADO': return 3;
+      case 'CANCELADO': return -1;
+      default: return 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_pasoActual == -1) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+        child: const Row(
+          children: [
+            Icon(Icons.cancel, color: Colors.red),
+            SizedBox(width: 10),
+            Text('Este pedido ha sido CANCELADO', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _paso(0, 'Recibido', Icons.receipt_long),
+            _linea(0),
+            _paso(1, 'Pagado', Icons.payments_outlined),
+            _linea(1),
+            _paso(2, 'En camino', Icons.local_shipping_outlined),
+            _linea(2),
+            _paso(3, 'Entregado', Icons.coffee),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _paso(int index, String titulo, IconData icono) {
+    final bool completado = index <= _pasoActual;
+    final Color color = completado ? dorado : Colors.grey.shade300;
+
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: completado ? color.withValues(alpha: 0.1) : Colors.transparent,
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: 2),
+            ),
+            child: Icon(icono, size: 20, color: color),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            titulo,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: completado ? FontWeight.bold : FontWeight.normal,
+              color: completado ? cafePrincipal : Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _linea(int index) {
+    final bool completado = index < _pasoActual;
+    return Container(
+      width: 20,
+      height: 2,
+      margin: const EdgeInsets.only(bottom: 22), // Alineado con los iconos
+      color: completado ? dorado : Colors.grey.shade300,
     );
   }
 }

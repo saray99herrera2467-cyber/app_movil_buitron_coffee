@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'registro_screen.dart';
 import 'catalogo_screen.dart';
+import 'recuperar_clave_screen.dart';
 import 'admin/admin_panel_screen.dart';
-import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -233,13 +233,17 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
 
-              // ¿OLVIDASTE TU CONTRASEÑA?
               Align(
                 alignment: Alignment.centerRight,
                 child: Padding(
                   padding: const EdgeInsets.only(right: 25, top: 8),
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const RecuperarClaveScreen()),
+                      );
+                    },
                     child: const Text(
                       '¿Olvidaste tu contraseña?',
                       style: TextStyle(

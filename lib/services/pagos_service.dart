@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_service.dart';
 
@@ -72,7 +73,7 @@ class PedidoService {
 
       return pedidoRespuesta;
     } catch (e) {
-      print('Error al crear pedido: $e');
+      debugPrint('Error al crear pedido: $e');
       return null;
     }
   }

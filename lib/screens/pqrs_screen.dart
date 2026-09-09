@@ -221,9 +221,9 @@ class _PqrsScreenState extends State<PqrsScreen> {
         'telefono': _telefonoCtrl.text.trim(),
         'descripcion': descripcionFinal,
         'tipo': _tipo.etiqueta,
-        'estado': 'Pendiente',
+        'estado': 'Pendiente', // ✅ Usamos el valor exacto de la DB para evitar el error CHECK
         'codigo_referencia': radicadoGenerado.numero,
-        'frecha_creacion': DateTime.now().toIso8601String(),
+        'fecha_creacion': DateTime.now().toIso8601String(),
         'fecha_actualizacion': DateTime.now().toIso8601String(),
       });
 

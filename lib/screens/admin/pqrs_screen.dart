@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import '../../services/pqrs_service.dart';
 
 class AdminPqrsScreen extends StatefulWidget {
   const AdminPqrsScreen({super.key});
@@ -9,9 +9,6 @@ class AdminPqrsScreen extends StatefulWidget {
 }
 
 class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
-  // ==========================================================
-  // COLORES BUITRÓN COFFEE
-  // ==========================================================
   static const Color cafePrincipal = Color(0xFF4E342E);
   static const Color cafeClaro = Color(0xFF795548);
   static const Color crema = Color(0xFFF5EFE6);
@@ -19,7 +16,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
   static const Color dorado = Color(0xFFC8A45D);
   static const Color textoSuave = Color(0xFF756860);
 
-  String filtroEstado = 'Todos';
+  String filtroEstado = 'todos';
   String busqueda = '';
   bool _cargando = true;
   List<Map<String, dynamic>> pqrs = [];
@@ -35,11 +32,8 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
   Future<void> _cargarPqrs() async {
     setState(() => _cargando = true);
     try {
-      final res = await ApiService.supabase
-          .from(ApiService.tablaPqrs)
-          .select()
-          .order('frecha_creacion', ascending: false);
-      
+      final res = await PqrsService.obtenerTodas();
+      if (!mounted) return;
       setState(() {
         pqrs = List<Map<String, dynamic>>.from(res);
         _cargando = false;
@@ -56,15 +50,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
 
   Future<void> _actualizarRespuesta(String codigoRef, String nuevoEstado, String respuesta) async {
     try {
-      await ApiService.supabase
-          .from(ApiService.tablaPqrs)
-          .update({
-            'estado': nuevoEstado,
-            'respuesta': respuesta,
-            'fecha_actualizacion': DateTime.now().toIso8601String(),
-          })
-          .eq('codigo_referencia', codigoRef);
-      
+      await PqrsService.actualizarRespuesta(codigoRef, nuevoEstado, respuesta);
       await _cargarPqrs();
     } catch (e) {
       if (mounted) {
@@ -83,8 +69,8 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
 
   List<Map<String, dynamic>> get pqrsFiltradas {
     return pqrs.where((item) {
-      final coincideEstado = filtroEstado == 'Todos' ||
-          item['estado'] == filtroEstado;
+      final coincideEstado = filtroEstado == 'todos' ||
+          item['estado'].toString() == filtroEstado;
 
       final texto = busqueda.toLowerCase();
 
@@ -98,19 +84,19 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
   }
 
   Color colorEstado(String estado) {
-    switch (estado.toLowerCase()) {
-      case 'pendiente': return Colors.orange;
-      case 'en proceso': return Colors.blue;
-      case 'resuelta': return Colors.green;
+    switch (estado.toUpperCase()) {
+      case 'PENDIENTE': return Colors.orange;
+      case 'EN PROCESO': return Colors.blue;
+      case 'RESUELTA': return Colors.green;
       default: return Colors.grey;
     }
   }
 
   IconData iconoEstado(String estado) {
-    switch (estado.toLowerCase()) {
-      case 'pendiente': return Icons.pending_actions;
-      case 'en proceso': return Icons.autorenew;
-      case 'resuelta': return Icons.check_circle;
+    switch (estado.toUpperCase()) {
+      case 'PENDIENTE': return Icons.pending_actions;
+      case 'EN PROCESO': return Icons.autorenew;
+      case 'RESUELTA': return Icons.check_circle;
       default: return Icons.help_outline;
     }
   }
@@ -146,22 +132,24 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                     const SizedBox(height: 20),
                     const Text('Cambiar Estado:', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: ['Pendiente', 'En proceso', 'Resuelta'].contains(estadoActual) ? estadoActual : 'Pendiente',
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
-                      items: const [
-                        DropdownMenuItem(value: 'Pendiente', child: Text('Pendiente')),
-                        DropdownMenuItem(value: 'En proceso', child: Text('En proceso')),
-                        DropdownMenuItem(value: 'Resuelta', child: Text('Resuelta')),
-                      ],
-                      onChanged: (valor) {
-                        if (valor != null) {
-                          setDialogState(() {
-                            estadoActual = valor;
-                          });
-                        }
-                      },
-                    ),
+    DropdownButtonFormField<String>(
+      initialValue: ['PENDIENTE', 'EN PROCESO', 'RESUELTA'].contains(estadoActual.toUpperCase()) 
+          ? estadoActual.toUpperCase() 
+          : 'PENDIENTE',
+      decoration: const InputDecoration(border: OutlineInputBorder()),
+      items: const [
+        DropdownMenuItem(value: 'PENDIENTE', child: Text('Pendiente')),
+        DropdownMenuItem(value: 'EN PROCESO', child: Text('En proceso')),
+        DropdownMenuItem(value: 'RESUELTA', child: Text('Resuelta')),
+      ],
+      onChanged: (valor) {
+        if (valor != null) {
+          setDialogState(() {
+            estadoActual = valor;
+          });
+        }
+      },
+    ),
                     const SizedBox(height: 20),
                     const Text('Respuesta del Administrador:', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
@@ -232,7 +220,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                   TextField(
                     controller: _buscarController,
                     decoration: InputDecoration(
-                      hintText: 'Buscar por nombre, asunto o radicado...',
+                      hintText: 'Buscar por nombre o radicado...',
                       prefixIcon: const Icon(Icons.search, color: cafePrincipal),
                       filled: true,
                       fillColor: cremaClaro,
@@ -252,7 +240,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'Todos', child: Text('Todos')),
+                      DropdownMenuItem(value: 'todos', child: Text('Todos')),
                       DropdownMenuItem(value: 'Pendiente', child: Text('Pendientes')),
                       DropdownMenuItem(value: 'En proceso', child: Text('En proceso')),
                       DropdownMenuItem(value: 'Resuelta', child: Text('Resueltas')),
@@ -273,7 +261,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                               itemCount: lista.length,
                               itemBuilder: (context, index) {
                                 final item = lista[index];
-                                final estadoActual = item['estado'] ?? 'Pendiente';
+                                final estadoActual = item['estado'] ?? 'pendiente';
                                 final color = colorEstado(estadoActual);
                                 return Card(
                                   color: cremaClaro,
@@ -294,7 +282,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                                     trailing: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
-                                      child: Text(estadoActual, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
+                                      child: Text(estadoActual.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
                                     ),
                                     onTap: () => mostrarDetalle(item),
                                   ),

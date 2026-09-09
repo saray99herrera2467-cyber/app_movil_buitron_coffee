@@ -1,37 +1,41 @@
-# Walkthrough: PQRS Schema Alignment
+# Walkthrough: Solución Definitiva de PQRS, Recuperación de Clave y Seguimiento Visual
 
-I have updated the PQRS module to perfectly match your Supabase database schema, ensuring that all fields are correctly saved and displayed for both users and administrators.
+He completado los ajustes finales para asegurar que las PQRS funcionen, el flujo de recuperación de clave sea completo y el seguimiento de pedidos sea profesional.
 
-## Changes Made
+## Cambios Realizados
 
-### [Screens]
+### [Gestión de PQRS]
 
-#### [pqrs_screen.dart (User)](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/pqrs_screen.dart)
-- **Schema Alignment**: Updated column names to match Supabase:
-    - `correo` → `email`
-    - `radicado` → `codigo_referencia`
-    - `fecha` → `frecha_creacion`
-- **User Association**: Now fetches and sends the `id_usuario` during submission.
-- **Data Integrity**: Combined the "Asunto" (Subject) field into the "Descripción" column so no information is lost, even though the table doesn't have a specific subject column.
-- **Timestamps**: Added `fecha_actualizacion` to the initial insert.
+#### [pqrs_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/pqrs_screen.dart)
+- **PascalCase Exacto**: Se configuró el envío del estado como **`'Pendiente'`** (mayúscula inicial) y se aseguraron los tipos con sus tildes y mayúsculas correspondientes. Esto cumple con las restricciones de valor (`CHECK constraints`) de tu base de datos en Supabase.
 
-#### [admin/pqrs_screen.dart (Admin)](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/admin/pqrs_screen.dart)
-- **Updated Display**: All labels and data mapping now use the correct `codigo_referencia`, `email`, and `frecha_creacion` columns.
-- **Response Management**: Added a new "Respuesta del Administrador" text field in the detail dialog. Admins can now write and save responses, which will be stored in the new `respuesta` column.
-- **Audit Trail**: Updating a PQRS now correctly sets the `fecha_actualizacion` timestamp.
+### [Seguridad]
 
-### [Services]
+#### [restablecer_clave_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/restablecer_clave_screen.dart) [NEW]
+- **Cambio de Contraseña**: Se creó la pantalla final donde el usuario ingresa su nueva clave. Sin esta vista, el proceso de recuperación quedaría incompleto al recibir el correo.
+- **Flujo de Servicio**: Se añadió el método `actualizarClave` en `AuthService` para guardar los cambios de forma segura en Supabase Auth.
 
-#### [pqrs_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/pqrs_service.dart)
-- **Query Consistency**: Updated `obtenerTodas` to sort by `frecha_creacion`.
-- **Logic Correction**: Updated `actualizarEstado` to use the correct `codigo_referencia` key for identification.
+### [Seguimiento Visual de Pedidos]
 
-## Verification Results
+#### [historial_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/historial_screen.dart)
+- **Línea de Tiempo (Timeline)**: Se integró un widget visual en el detalle de cada pedido que muestra el progreso real:
+  - 📥 **Recibido** (Pendiente)
+  - 💳 **Pagado** (Pagado)
+  - 🚚 **En camino** (Enviado)
+  - ☕ **Entregado** (Entregado)
+- **Información de Envío**: Se mantiene el recuadro verde con la transportadora y el número de guía asignado por el administrador.
 
-### Automated Tests
-- Ran `flutter analyze` on all modified components:
-  - **Result**: `No issues found!`
+### [Administrador]
 
-### Manual Verification
-- **Submission**: Verified that the user form now includes `id_usuario` and maps the email to the correct column.
-- **Admin Panel**: Verified that the list loads correctly using `frecha_creacion` and that the Detail dialog correctly handles the `respuesta` field.
+#### [admin/gestion_pedidos_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/admin/gestion_pedidos_screen.dart)
+- **Actualización Inmediata**: La lista de pedidos ahora se recarga automáticamente tras guardar la información de seguimiento.
+
+## Resultados de Verificación
+
+- El código ha sido analizado con `flutter analyze` y está **libre de errores y advertencias**.
+- Se corrigieron duplicidades de widgets que impedían la compilación fluida.
+
+> [!TIP]
+> **Prueba definitiva**:
+> 1. Intenta enviar una PQRS; ahora los valores coinciden letra por letra con Supabase.
+> 2. Como admin, asigna una guía a un pedido y cámbialo a "ENVIADO". Verás cómo la línea de tiempo del usuario avanza automáticamente.

@@ -20,7 +20,6 @@ class _ActualizarProductoScreenState extends State<ActualizarProductoScreen> {
   static const Color crema = Color(0xFFF5EFE6);
   static const Color cremaClaro = Color(0xFFFFFCF7);
   static const Color dorado = Color(0xFFC8A45D);
-  static const Color textoOscuro = Color(0xFF3A2925);
   static const Color textoSuave = Color(0xFF756860);
 
   @override
@@ -205,6 +204,7 @@ class _EditarProductoScreenState extends State<EditarProductoScreen> {
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _descripcionCtrl;
   late final TextEditingController _precioCtrl;
+  late final TextEditingController _stockCtrl; // ✅ Definido correctamente
   late final TextEditingController _imagenCtrl;
   late final TextEditingController _categoriaCtrl;
   late bool _estado;
@@ -224,6 +224,7 @@ class _EditarProductoScreenState extends State<EditarProductoScreen> {
     _nombreCtrl = TextEditingController(text: p.nombre);
     _descripcionCtrl = TextEditingController(text: p.descripcion ?? '');
     _precioCtrl = TextEditingController(text: p.precio.toString());
+    _stockCtrl = TextEditingController(text: p.stock.toString());
     _imagenCtrl = TextEditingController(text: p.imagen ?? '');
     _categoriaCtrl = TextEditingController(text: p.categoria);
     _estado = p.estado;
@@ -234,6 +235,7 @@ class _EditarProductoScreenState extends State<EditarProductoScreen> {
     _nombreCtrl.dispose();
     _descripcionCtrl.dispose();
     _precioCtrl.dispose();
+    _stockCtrl.dispose();
     _imagenCtrl.dispose();
     _categoriaCtrl.dispose();
     super.dispose();
@@ -266,7 +268,11 @@ class _EditarProductoScreenState extends State<EditarProductoScreen> {
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text(provider.error ?? 'Error al actualizar')),
+        SnackBar(
+          backgroundColor: Colors.red, 
+          content: Text(provider.error ?? 'Error al actualizar'),
+          duration: const Duration(seconds: 5),
+        ),
       );
     }
   }
@@ -297,6 +303,13 @@ class _EditarProductoScreenState extends State<EditarProductoScreen> {
                 icono: Icons.attach_money,
                 tipo: const TextInputType.numberWithOptions(decimal: true),
                 prefix: '\$ ',
+              ),
+              const SizedBox(height: 16),
+              _campoTexto(
+                controller: _stockCtrl, 
+                label: 'Stock disponible', 
+                icono: Icons.inventory_2_outlined,
+                tipo: TextInputType.number,
               ),
               const SizedBox(height: 16),
               _campoTexto(controller: _categoriaCtrl, label: 'Categoría', icono: Icons.category),

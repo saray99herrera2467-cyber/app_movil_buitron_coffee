@@ -16,6 +16,7 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
   final _nombreCtrl = TextEditingController();
   final _descripcionCtrl = TextEditingController();
   final _precioCtrl = TextEditingController();
+  final _stockCtrl = TextEditingController(text: '0'); // 👈 NUEVO
   final _imagenCtrl = TextEditingController();
   final _categoriaCtrl = TextEditingController();
 
@@ -30,14 +31,13 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
   static const Color crema = Color(0xFFF5EFE6);
   static const Color cremaClaro = Color(0xFFFFFCF7);
   static const Color dorado = Color(0xFFC8A45D);
-  static const Color textoOscuro = Color(0xFF3A2925);
-  static const Color textoSuave = Color(0xFF756860);
 
   @override
   void dispose() {
     _nombreCtrl.dispose();
     _descripcionCtrl.dispose();
     _precioCtrl.dispose();
+    _stockCtrl.dispose();
     _imagenCtrl.dispose();
     _categoriaCtrl.dispose();
     super.dispose();
@@ -48,30 +48,39 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
 
     setState(() => _guardando = true);
 
-    final nuevoProducto = Producto(
-      id: 0, 
-      nombre: _nombreCtrl.text.trim(),
-      descripcion: _descripcionCtrl.text.trim().isEmpty ? null : _descripcionCtrl.text.trim(),
-      precio: double.parse(_precioCtrl.text.trim()),
-      imagen: _imagenCtrl.text.trim().isEmpty ? null : _imagenCtrl.text.trim(),
-      categoria: _categoriaCtrl.text.trim(),
-      estado: _estado,
-    );
-
-    final provider = context.read<ProductoAdminProvider>();
-    final exito = await provider.crearProducto(nuevoProducto);
-
-    if (!mounted) return;
-    setState(() => _guardando = false);
-
-    if (exito) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(backgroundColor: Colors.green, content: Text('Producto creado correctamente')),
+    try {
+      final nuevoProducto = Producto(
+        id: 0, 
+        nombre: _nombreCtrl.text.trim(),
+        descripcion: _descripcionCtrl.text.trim().isEmpty ? null : _descripcionCtrl.text.trim(),
+        precio: double.parse(_precioCtrl.text.trim()),
+        stock: int.tryParse(_stockCtrl.text.trim()) ?? 0, 
+        imagen: _imagenCtrl.text.trim().isEmpty ? null : _imagenCtrl.text.trim(),
+        categoria: _categoriaCtrl.text.trim(),
+        estado: _estado,
       );
-      Navigator.pop(context);
-    } else {
+
+      final provider = context.read<ProductoAdminProvider>();
+      final exito = await provider.crearProducto(nuevoProducto);
+
+      if (!mounted) return;
+      setState(() => _guardando = false);
+
+      if (exito) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(backgroundColor: Colors.green, content: Text('Producto creado correctamente')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.red, content: Text(provider.error ?? 'Error al crear el producto')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _guardando = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text(provider.error ?? 'Error al crear el producto')),
+        SnackBar(backgroundColor: Colors.red, content: Text('Error: $e')),
       );
     }
   }
@@ -103,6 +112,13 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
                 icono: Icons.attach_money,
                 tipo: const TextInputType.numberWithOptions(decimal: true),
                 prefix: '\$ ',
+              ),
+              const SizedBox(height: 16),
+              _campoTexto(
+                controller: _stockCtrl, 
+                label: 'Stock disponible', 
+                icono: Icons.inventory_2_outlined,
+                tipo: TextInputType.number,
               ),
               const SizedBox(height: 16),
               _campoTexto(controller: _categoriaCtrl, label: 'Categoría (Grano / Molido)', icono: Icons.category),

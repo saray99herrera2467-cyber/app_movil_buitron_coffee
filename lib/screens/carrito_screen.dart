@@ -136,10 +136,17 @@ class CarritoScreen extends StatelessWidget {
                     );
                   },
                   onSumar: () {
-                    carrito.cambiarCantidad(
-                      producto.id,
-                      cantidad + 1,
-                    );
+                    final error = carrito.aumentarCantidad(producto.id);
+                    if (error != null) {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.redAccent,
+                          content: Text(error),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    }
                   },
                   onEliminar: () {
                     carrito.eliminarProducto(producto.id);
