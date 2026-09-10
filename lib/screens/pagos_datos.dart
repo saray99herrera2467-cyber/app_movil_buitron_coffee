@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart'; // ✅ Agregado para formateadores
 import '../services/auth_service.dart';
+import '../services/perfil_service.dart'; // ✅ Usar servicio centralizado
 import 'pagos_screen.dart';
 const Color cafePrincipal = Color(0xFF4E342E);
 const Color crema = Color(0xFFF5EFE6);
@@ -40,11 +41,8 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
       _correoController.text = correo;
 
       try {
-        final datos = await Supabase.instance.client
-            .from('usuario')
-            .select()
-            .eq('correo', correo)
-            .maybeSingle();
+        final PerfilService perfilService = PerfilService();
+        final datos = await perfilService.cargarDatosUsuario(correo);
 
         if (datos != null) {
           setState(() {
@@ -59,11 +57,21 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
   }
 
   void _continuar() {
+    final nombre = _nombreController.text.trim();
+    
     if (_correoController.text.trim().isEmpty ||
-        _nombreController.text.trim().isEmpty ||
+        nombre.isEmpty ||
         _direccionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('❌ Completa todos los datos')),
+      );
+      return;
+    }
+
+    // 📌 RESTRICTIÓN: Nombre verdadero (Solo letras, min 3)
+    if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}$").hasMatch(nombre)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ Ingresa un nombre válido (mín. 3 letras)')),
       );
       return;
     }
@@ -119,6 +127,7 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
               controller: _nombreController,
               label: 'Nombre completo',
               icono: Icons.person_outline,
+              formatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ ]'))],
             ),
             const SizedBox(height: 16),
             _campoTexto(
@@ -126,6 +135,8 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
               label: 'Teléfono',
               icono: Icons.phone_outlined,
               tipo: TextInputType.phone,
+              formatters: [FilteringTextInputFormatter.digitsOnly],
+              maxL: 10,
             ),
             const SizedBox(height: 24),
 
@@ -166,14 +177,19 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
     bool habilitado = true,
     int maxLines = 1,
     TextInputType tipo = TextInputType.text,
+    List<TextInputFormatter>? formatters, // 👈 Nuevo parámetro
+    int? maxL, // 👈 Nuevo parámetro
   }) {
     return TextField(
       controller: controller,
       enabled: habilitado,
       maxLines: maxLines,
       keyboardType: tipo,
+      inputFormatters: formatters,
+      maxLength: maxL,
       decoration: InputDecoration(
         labelText: label,
+        counterText: '',
         prefixIcon: Icon(icono, color: cafePrincipal),
         filled: true,
         fillColor: habilitado ? cremaClaro : const Color(0xFFE9E3DC),

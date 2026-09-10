@@ -45,7 +45,19 @@ class ProductoService {
   // ============================================================
   static Future<void> crearProducto(Producto producto) async {
     try {
-      await _supabase.from(_tabla).insert(producto.toJson());
+      // ✅ Creamos un mapa limpio sin la llave 'id' para forzar a Supabase
+      // a usar su generador automático de llaves primarias (Identity/Serial).
+      final Map<String, dynamic> datosParaInsertar = {
+        'nombre_producto': producto.nombre,
+        'descripcion': producto.descripcion,
+        'precio': producto.precio,
+        'imagen': producto.imagen,
+        'categoria': producto.categoria,
+        'estado': producto.estado,
+        'stock': producto.stock,
+      };
+      
+      await _supabase.from(_tabla).insert(datosParaInsertar);
     } catch (e) {
       rethrow;
     }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'catalogo_screen.dart';
-import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/pqrs_service.dart';
 
 // ============================================================
 // PALETA DE COLORES
@@ -236,14 +236,15 @@ class _PqrsScreenState extends State<PqrsScreen> {
       final String descripcionFinal = 
           'ASUNTO: ${_asuntoCtrl.text.trim()}\n\n${_descripcionCtrl.text.trim()}';
 
-      await ApiService.supabase.from(ApiService.tablaPqrs).insert({
+      // ✅ Usamos el servicio centralizado (Regra: APIs en services)
+      await PqrsService.enviarPqrs({
         'id_usuario': usuarioId,
         'nombre': _nombreCtrl.text.trim(),
         'email': _correoCtrl.text.trim(),
         'telefono': _telefonoCtrl.text.trim(),
         'descripcion': descripcionFinal,
         'tipo': _tipo.etiqueta,
-        'estado': 'pendiente', // ✅ Minúsculas exactas según la restricción SQL
+        'estado': 'pendiente', 
         'codigo_referencia': radicadoGenerado.numero,
         'fecha_creacion': DateTime.now().toIso8601String(),
         'fecha_actualizacion': DateTime.now().toIso8601String(),

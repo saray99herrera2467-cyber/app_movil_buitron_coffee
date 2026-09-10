@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ✅ Agregado para formateadores
 import 'login_screen.dart';
 import 'verificacion_screen.dart';
 import '../services/auth_service.dart'; 
@@ -81,8 +82,17 @@ class _RegistroPageState extends State<RegistroPage> {
     // VERIFICAR CAMPOS
     // =======================================================
 
-    if (nombre.isEmpty) { _mostrarMensaje('El nombre es obligatorio'); return; }
-    if (apellido.isEmpty) { _mostrarMensaje('El apellido es obligatorio'); return; }
+    if (nombre.isEmpty) { _mostrarMensaje('Por favor, complete su nombre verdadero'); return; }
+    if (apellido.isEmpty) { _mostrarMensaje('Por favor, complete su nombre verdadero'); return; }
+    
+    // 📌 RESTRICTIÓN: Nombre verdadero (Solo letras, min 3)
+    final bool nombreValido = RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}$").hasMatch(nombre);
+    final bool apellidoValido = RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}$").hasMatch(apellido);
+    if (!nombreValido || !apellidoValido) {
+      _mostrarMensaje('Por favor, complete su nombre verdadero (solo letras, mín. 3 caracteres)');
+      return;
+    }
+
     if (documento.isEmpty) { _mostrarMensaje('El documento es obligatorio'); return; }
     if (correo.isEmpty) { _mostrarMensaje('El correo es obligatorio'); return; }
     if (direccion.isEmpty) { _mostrarMensaje('La dirección es obligatorio'); return; }
@@ -341,6 +351,7 @@ class _RegistroPageState extends State<RegistroPage> {
                   hintText: 'Escriba su nombre',
                   icono: Icons.person_outline,
                   tipo: TextInputType.name,
+                  formatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ ]'))],
                 ),
 
                 const SizedBox(height: 16),
@@ -355,6 +366,7 @@ class _RegistroPageState extends State<RegistroPage> {
                   hintText: 'Escriba su apellido',
                   icono: Icons.badge_outlined,
                   tipo: TextInputType.name,
+                  formatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ ]'))],
                 ),
 
                 const SizedBox(height: 16),
@@ -370,6 +382,7 @@ class _RegistroPageState extends State<RegistroPage> {
                   icono: Icons.assignment_ind_outlined,
                   tipo: TextInputType.number,
                   maxL: 11,
+                  formatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
 
                 const SizedBox(height: 16),
@@ -413,6 +426,7 @@ class _RegistroPageState extends State<RegistroPage> {
                   icono: Icons.phone_outlined,
                   tipo: TextInputType.phone,
                   maxL: 10,
+                  formatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
 
                 const SizedBox(height: 16),
@@ -623,13 +637,15 @@ class _RegistroPageState extends State<RegistroPage> {
     required String hintText,
     required IconData icono,
     required TextInputType tipo,
-    int? maxL, // 👈 Nuevo parámetro
+    int? maxL,
+    List<TextInputFormatter>? formatters, // 👈 Nuevo parámetro
   }) {
     return TextField(
       controller: controller,
 
       keyboardType: tipo,
-      maxLength: maxL, // 👈 Aplicar longitud
+      maxLength: maxL,
+      inputFormatters: formatters, // 👈 Aplicar formateadores
 
       decoration: InputDecoration(
         labelText: labelText,

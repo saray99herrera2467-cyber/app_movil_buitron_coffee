@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ✅ Agregado para formateadores
 
 import '../services/perfil_service.dart';
 import '../services/auth_service.dart';
@@ -209,7 +210,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                 TextField(
                   controller: _nombreController,
-
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ ]'))],
                   decoration: InputDecoration(
                     labelText: 'Nombre',
                     labelStyle: const TextStyle(
@@ -251,7 +252,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                 TextField(
                   controller: _apellidoController,
-
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ ]'))],
                   decoration: InputDecoration(
                     labelText: 'Apellido',
                     labelStyle: const TextStyle(
@@ -294,9 +295,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 TextField(
                   controller: _documentoController,
                   keyboardType: TextInputType.number,
-
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  maxLength: 11,
                   decoration: InputDecoration(
                     labelText: 'Documento',
+                    counterText: '',
                     labelStyle: const TextStyle(
                       color: textoSuave,
                     ),
@@ -369,9 +372,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 TextField(
                   controller: _telefonoController,
                   keyboardType: TextInputType.phone,
-
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  maxLength: 10,
                   decoration: InputDecoration(
                     labelText: 'Teléfono',
+                    counterText: '',
                     labelStyle: const TextStyle(
                       color: textoSuave,
                     ),
@@ -535,8 +540,23 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
     if (nombre.isEmpty) {
       _mostrarMensaje(
-        'El nombre es obligatorio',
+        'Por favor, complete su nombre verdadero',
       );
+      return;
+    }
+
+    if (apellido.isEmpty) {
+      _mostrarMensaje(
+        'Por favor, complete su nombre verdadero',
+      );
+      return;
+    }
+
+    // 📌 RESTRICTIÓN: Nombre verdadero (Solo letras, min 3)
+    final bool nombreValido = RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}$").hasMatch(nombre);
+    final bool apellidoValido = RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}$").hasMatch(apellido);
+    if (!nombreValido || !apellidoValido) {
+      _mostrarMensaje('Por favor, complete su nombre verdadero (solo letras, mín. 3 caracteres)');
       return;
     }
 
@@ -566,6 +586,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
       if (!mounted) return;
 
+      // Cerrar el modal usando el contexto del modal (modalContext)
       Navigator.pop(modalContext);
 
       setState(() {

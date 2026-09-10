@@ -357,12 +357,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   // AGREGAR AL CARRITO
   // ==========================================================
 
-  void _agregarAlCarrito(Producto producto) {
-    final error = context.read<CarritoProvider>().agregarProducto(producto);
+  Future<void> _agregarAlCarrito(Producto producto) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await context.read<CarritoProvider>().agregarProducto(producto);
 
     if (error != null) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           backgroundColor: Colors.redAccent,
           content: Text(
@@ -375,9 +376,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    messenger.hideCurrentSnackBar();
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(
         backgroundColor: cafePrincipal,
 
@@ -706,6 +707,10 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   ),
 
                   onTap: () async {
+                    // ✅ Al cerrar sesión solo limpiamos la memoria local del carrito
+                    // No vaciamos la base de datos
+                    context.read<CarritoProvider>().limpiarCarritoLocal();
+                    
                     await AuthService.logout();
 
                     if (!mounted) return;

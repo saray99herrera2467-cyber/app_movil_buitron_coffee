@@ -158,7 +158,7 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
         ],
       ),
       bottomSheet: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 85), // ✅ Elevamos los botones sustancialmente (85px)
         decoration: const BoxDecoration(
           color: Colors.white,
           boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
@@ -167,14 +167,15 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: () {
-              final error = context.read<CarritoProvider>().agregarProducto(widget.producto);
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final error = await context.read<CarritoProvider>().agregarProducto(widget.producto);
               if (error != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(backgroundColor: Colors.redAccent, content: Text(error)),
                 );
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text('${widget.producto.nombre} agregado')),
                 );
               }

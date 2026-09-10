@@ -228,6 +228,19 @@ class AuthService {
     await prefs.remove('usuario_rol');
   }
 
+  // Obtener todos los usuarios (para el administrador)
+  static Future<List<dynamic>> obtenerTodosUsuarios() async {
+    try {
+      return await _supabase
+          .from(ApiService.tablaUsuarios)
+          .select()
+          .order('id', ascending: true);
+    } catch (e) {
+      debugPrint('Error obteniendo usuarios: $e');
+      rethrow;
+    }
+  }
+
   // Obtener correo de la sesión guardada
   static Future<String?> obtenerCorreoSesion() async {
     final prefs = await SharedPreferences.getInstance();

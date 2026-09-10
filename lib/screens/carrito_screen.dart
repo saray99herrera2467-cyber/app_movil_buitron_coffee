@@ -129,17 +129,18 @@ class CarritoScreen extends StatelessWidget {
                 return _ProductoCarrito(
                   producto: producto,
                   cantidad: cantidad,
-                  onRestar: () {
-                    carrito.cambiarCantidad(
+                  onRestar: () async {
+                    await carrito.cambiarCantidad(
                       producto.id,
                       cantidad - 1,
                     );
                   },
-                  onSumar: () {
-                    final error = carrito.aumentarCantidad(producto.id);
+                  onSumar: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final error = await carrito.aumentarCantidad(producto.id);
                     if (error != null) {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.hideCurrentSnackBar();
+                      messenger.showSnackBar(
                         SnackBar(
                           backgroundColor: Colors.redAccent,
                           content: Text(error),
@@ -473,7 +474,7 @@ class _ResumenCompra extends StatelessWidget {
         20,
         18,
         20,
-        20,
+        80, // ✅ Subimos los botones sustancialmente
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

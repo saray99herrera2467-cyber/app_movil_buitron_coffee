@@ -1,6 +1,3 @@
-- `[ ]` Actualizar `TipoPqrs` enum con `felicitacion`
-- `[ ]` Mapear `peticion` -> `'pregunta'` para Supabase
-- `[ ]` Normalizar todos los tipos a minúsculas y sin tildes en `etiqueta`
-- `[ ]` Añadir `etiquetaVisual` para la interfaz de usuario
-- `[ ]` Verificar envío exitoso
-- `[ ]` Verificar con `flutter analyze`
+- `[x]` Reforzar exclusión de `id` en `ProductoService.crearProducto`
+- `[x]` Elevar botones en `detalle_producto_screen.dart` (padding 85)
+- `[x]` Verificar con `flutter analyze`

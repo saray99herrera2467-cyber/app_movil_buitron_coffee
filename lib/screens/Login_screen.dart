@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // ✅ Agregado para limpiar el carrito
 import 'registro_screen.dart';
 import 'catalogo_screen.dart';
 import 'recuperar_clave_screen.dart';
 import 'admin/admin_panel_screen.dart';
 import '../services/auth_service.dart';
+import '../providers/carrito_provider.dart'; // ✅ Agregado
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -57,6 +59,13 @@ class _LoginPageState extends State<LoginPage> {
     try {
       // Consultar usuario en Supabase
       final usuario = await AuthService.login(correo: correo, clave: clave);
+
+      // ✅ Sincronizar el carrito del usuario al iniciar sesión
+      if (mounted) {
+        final carrito = context.read<CarritoProvider>();
+        carrito.limpiarCarritoLocal(); // Limpiar rastro de cuenta anterior
+        await carrito.cargarCarritoDesdeServicio(); // Cargar lo de la nueva cuenta
+      }
 
       // Obtener rol del usuario
       final idRol = usuario['id_rol'] as int? ?? 1;

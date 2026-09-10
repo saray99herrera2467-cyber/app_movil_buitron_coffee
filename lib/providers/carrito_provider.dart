@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/producto.dart';
+import '../services/carrito_service.dart';
 
 class CarritoProvider with ChangeNotifier {
   // ============================================================
@@ -11,9 +12,40 @@ class CarritoProvider with ChangeNotifier {
   // Como Producto.id es int, aquí también usamos int
   final Map<int, int> _cantidades = {};
 
+  // Mapeo para guardar el ID de la fila en la tabla 'carrito' de Supabase
+  final Map<int, int> _idsCarrito = {};
+
+  // ============================================================
+  // CARGAR DESDE NUBE
+  // ============================================================
+
+  Future<void> cargarCarritoDesdeServicio() async {
+    try {
+      final data = await CarritoService.obtenerCarrito();
+      
+      _items.clear();
+      _cantidades.clear();
+      _idsCarrito.clear();
+
+      for (var row in data) {
+        final prodJson = row['producto'];
+        if (prodJson != null) {
+          final prod = Producto.fromJson(Map<String, dynamic>.from(prodJson));
+          _items.add(prod);
+          _cantidades[prod.id] = row['cantidad'] ?? 1;
+          _idsCarrito[prod.id] = row['id'];
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error sincronizando carrito: $e');
+    }
+  }
+
   // ============================================================
   // GETTERS
   // ============================================================
+// ... (rest of the getters remain similar)
 
   List<Producto> get items => List.unmodifiable(_items);
 
@@ -80,7 +112,7 @@ class CarritoProvider with ChangeNotifier {
 
   /// Agrega un producto al carrito.
   /// Devuelve un String con el error si supera el stock, o null si fue exitoso.
-  String? agregarProducto(Producto producto) {
+  Future<String?> agregarProducto(Producto producto) async {
     final int id = producto.id;
     final int cantidadActual = _cantidades[id] ?? 0;
 
@@ -89,16 +121,20 @@ class CarritoProvider with ChangeNotifier {
       return 'Lo sentimos, no hay más unidades disponibles de este café.';
     }
 
+    // ✅ Sincronizar con Supabase
+    final exito = await CarritoService.agregarAlCarrito(id, 1);
+    if (!exito) return 'Error al conectar con la base de datos';
+
     if (_cantidades.containsKey(id)) {
-      // Ya existe → aumentar cantidad
       _cantidades[id] = cantidadActual + 1;
     } else {
-      // Producto nuevo
       _items.add(producto);
       _cantidades[id] = 1;
     }
 
     notifyListeners();
+    // Refrescamos IDs de carrito para asegurar consistencia
+    await cargarCarritoDesdeServicio(); 
     return null;
   }
 
@@ -106,19 +142,18 @@ class CarritoProvider with ChangeNotifier {
   // MÉTODO ALTERNATIVO PARA AGREGAR
   // ============================================================
 
-  String? agregar(Producto producto) {
-    return agregarProducto(producto);
+  Future<String?> agregar(Producto producto) async {
+    return await agregarProducto(producto);
   }
 
   // ============================================================
   // CAMBIAR CANTIDAD
   // ============================================================
 
-  String? cambiarCantidad(int productoId, int cantidad) {
+  Future<String?> cambiarCantidad(int productoId, int cantidad) async {
     // Si la cantidad llega a cero, eliminamos el producto
     if (cantidad <= 0) {
-      eliminarProducto(productoId);
-      return null;
+      return await eliminarProducto(productoId);
     }
 
     // Buscamos el producto en el carrito para conocer su stock
@@ -134,8 +169,14 @@ class CarritoProvider with ChangeNotifier {
       return 'Solo quedan ${producto.stock} unidades disponibles.';
     }
 
-    _cantidades[productoId] = cantidad;
+    // ✅ Sincronizar con Supabase
+    final idCarrito = _idsCarrito[productoId];
+    if (idCarrito != null) {
+      final exito = await CarritoService.actualizarCantidad(idCarrito, cantidad);
+      if (!exito) return 'Error al actualizar en la nube';
+    }
 
+    _cantidades[productoId] = cantidad;
     notifyListeners();
     return null;
   }
@@ -144,10 +185,10 @@ class CarritoProvider with ChangeNotifier {
   // AUMENTAR CANTIDAD
   // ============================================================
 
-  String? aumentarCantidad(int productoId) {
+  Future<String?> aumentarCantidad(int productoId) async {
     final cantidadActual = _cantidades[productoId] ?? 1;
 
-    return cambiarCantidad(
+    return await cambiarCantidad(
       productoId,
       cantidadActual + 1,
     );
@@ -170,14 +211,21 @@ class CarritoProvider with ChangeNotifier {
   // ELIMINAR PRODUCTO
   // ============================================================
 
-  void eliminarProducto(int productoId) {
+  Future<String?> eliminarProducto(int productoId) async {
+    final idCarrito = _idsCarrito[productoId];
+    if (idCarrito != null) {
+      await CarritoService.eliminarDelCarrito(idCarrito);
+    }
+
     _items.removeWhere(
           (producto) => producto.id == productoId,
     );
 
     _cantidades.remove(productoId);
+    _idsCarrito.remove(productoId);
 
     notifyListeners();
+    return null;
   }
 
   // ============================================================
@@ -192,10 +240,19 @@ class CarritoProvider with ChangeNotifier {
   // LIMPIAR TODO EL CARRITO
   // ============================================================
 
-  void limpiarCarrito() {
+  Future<void> limpiarCarrito() async {
+    await CarritoService.vaciarCarrito();
     _items.clear();
     _cantidades.clear();
+    _idsCarrito.clear();
 
+    notifyListeners();
+  }
+
+  void limpiarCarritoLocal() {
+    _items.clear();
+    _cantidades.clear();
+    _idsCarrito.clear();
     notifyListeners();
   }
 

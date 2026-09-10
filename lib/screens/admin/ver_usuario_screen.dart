@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import '../../services/auth_service.dart'; // ✅ Usar servicio centralizado
 
 class VerUsuariosScreen extends StatefulWidget {
   const VerUsuariosScreen({super.key});
@@ -37,13 +37,10 @@ class _VerUsuariosScreenState extends State<VerUsuariosScreen> {
       _error = null;
     });
     try {
-      final res = await ApiService.supabase
-          .from(ApiService.tablaUsuarios)
-          .select()
-          .order('id', ascending: true);
+      final res = await AuthService.obtenerTodosUsuarios();
 
       setState(() {
-        _usuarios = res as List<dynamic>;
+        _usuarios = res;
         _cargando = false;
       });
     } catch (e) {
