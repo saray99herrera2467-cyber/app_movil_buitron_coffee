@@ -1,3 +1,6 @@
-- `[x]` Reforzar exclusión de `id` en `ProductoService.crearProducto`
-- `[x]` Elevar botones en `detalle_producto_screen.dart` (padding 85)
+- `[x]` Actualizar `AuthService.logout` para invalidar el token en Supabase
+- `[x]` Implementar `AuthService.obtenerPerfilActual` para consultar el rol desde el token
+- `[x]` Crear widget de protección de rutas (`RouteGuard`) en `main.dart`
+- `[x]` Asegurar que el Login guarde la sesión correctamente
+- `[x]` Probar el flujo de persistencia y restricción de roles
 - `[x]` Verificar con `flutter analyze`

@@ -122,21 +122,22 @@ class AuthService {
     }
   }
 
-  // Verificar el código OTP enviado al correo
-  static Future<void> verificarCodigo(String email, String token) async {
+  // Verificar el código OTP enviado al correo (Genérico para Registro y Recuperación)
+  static Future<void> verificarCodigo(String email, String token, {bool esRecuperacion = false}) async {
     try {
       await _supabase.auth.verifyOTP(
-        email: email,
-        token: token,
-        type: OtpType.signup,
+        email: email.toLowerCase().trim(),
+        token: token.trim(),
+        type: esRecuperacion ? OtpType.recovery : OtpType.signup,
       );
 
-      // Si la verificación es exitosa, activamos al usuario en la tabla
-      await _supabase
-          .from(ApiService.tablaUsuarios)
-          .update({'estado': true})
-          .eq('correo', email.toLowerCase().trim());
-
+      // Si es registro exitoso, activamos al usuario en la tabla
+      if (!esRecuperacion) {
+        await _supabase
+            .from(ApiService.tablaUsuarios)
+            .update({'estado': true})
+            .eq('correo', email.toLowerCase().trim());
+      }
     } on AuthException catch (e) {
       throw Exception('Código inválido o expirado: ${e.message}');
     } catch (e) {
@@ -144,11 +145,11 @@ class AuthService {
     }
   }
 
-  // Reenviar el código de verificación al correo
-  static Future<void> reenviarCodigo(String email) async {
+  // Reenviar el código de verificación al correo (Genérico)
+  static Future<void> reenviarCodigo(String email, {bool esRecuperacion = false}) async {
     try {
       await _supabase.auth.resend(
-        type: OtpType.signup,
+        type: esRecuperacion ? OtpType.recovery : OtpType.signup,
         email: email.trim().toLowerCase(),
       );
     } on AuthException catch (e) {
@@ -221,11 +222,34 @@ class AuthService {
     await prefs.setInt('usuario_rol', rol);
   }
 
-  // Cerrar sesión local
+  // Cerrar sesión local y en Supabase
   static Future<void> logout() async {
+    try {
+      await _supabase.auth.signOut(); // ✅ Invalida el token en el servidor
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('usuario_correo');
     await prefs.remove('usuario_rol');
+  }
+
+  // Obtener el perfil del usuario autenticado actualmente por token
+  static Future<Map<String, dynamic>?> obtenerPerfilActual() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null || user.email == null) return null;
+
+    try {
+      final respuesta = await _supabase
+          .from(ApiService.tablaUsuarios)
+          .select()
+          .eq('correo', user.email!)
+          .maybeSingle();
+      
+      return respuesta;
+    } catch (e) {
+      debugPrint('Error al obtener perfil por token: $e');
+      return null;
+    }
   }
 
   // Obtener todos los usuarios (para el administrador)

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
+import 'verificacion_screen.dart';
+
 class RecuperarClaveScreen extends StatefulWidget {
   const RecuperarClaveScreen({super.key});
 
@@ -29,21 +31,15 @@ class _RecuperarClaveScreenState extends State<RecuperarClaveScreen> {
       await AuthService.recuperarClave(correo);
       if (!mounted) return;
       
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('¡Correo enviado!'),
-          content: const Text('Revisa tu bandeja de entrada (y la carpeta SPAM) para restablecer tu contraseña.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Cerrar diálogo
-                Navigator.pop(context); // Volver al Login
-              }, 
-              child: const Text('ENTENDIDO')
-            ),
-          ],
-        )
+      // ✅ Redirigir a la pantalla de verificación por código
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VerificacionScreen(
+            email: correo,
+            esRecuperacion: true, // 👈 Importante: indica que es recuperación
+          ),
+        ),
       );
     } catch (e) {
       _mostrarMensaje('Error: $e');
