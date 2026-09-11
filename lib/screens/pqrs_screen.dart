@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'catalogo_screen.dart';
 import '../services/auth_service.dart';
 import '../services/pqrs_service.dart';
+import '../services/perfil_service.dart';
 
 // ============================================================
 // PALETA DE COLORES
@@ -132,6 +133,30 @@ class _PqrsScreenState extends State<PqrsScreen> {
   bool _mostrarError = false;
 
   Radicado? _radicado;
+
+  @override
+  void initState() {
+    super.initState();
+    _asuntoCtrl.text = _tipo.etiquetaVisual;
+    _cargarDatosUsuario();
+  }
+
+  Future<void> _cargarDatosUsuario() async {
+    final correo = await AuthService.obtenerCorreoSesion();
+    if (correo != null) {
+      _correoCtrl.text = correo;
+      try {
+        final PerfilService perfilService = PerfilService();
+        final datos = await perfilService.cargarDatosUsuario(correo);
+        if (datos != null && mounted) {
+          setState(() {
+            _nombreCtrl.text = '${datos['nombre_usuario'] ?? ''} ${datos['apellido'] ?? ''}'.trim();
+            _telefonoCtrl.text = datos['telefono'] ?? '';
+          });
+        }
+      } catch (_) {}
+    }
+  }
 
   // ==========================================================
   // REGRESAR AL CATÁLOGO
@@ -278,19 +303,14 @@ class _PqrsScreenState extends State<PqrsScreen> {
 
   void _reiniciar() {
     setState(() {
-      _nombreCtrl.clear();
-      _correoCtrl.clear();
-      _telefonoCtrl.clear();
-      _asuntoCtrl.clear();
       _descripcionCtrl.clear();
-
       _tipo = TipoPqrs.peticion;
-
+      _asuntoCtrl.text = TipoPqrs.peticion.etiquetaVisual;
       _aceptaTratamientoDatos = false;
       _mostrarError = false;
-
       _radicado = null;
     });
+    _cargarDatosUsuario();
   }
 
   // ==========================================================
@@ -483,6 +503,7 @@ class _PqrsScreenState extends State<PqrsScreen> {
           onSeleccionar: (tipo) {
             setState(() {
               _tipo = tipo;
+              _asuntoCtrl.text = tipo.etiquetaVisual;
             });
           },
         ),
@@ -496,6 +517,7 @@ class _PqrsScreenState extends State<PqrsScreen> {
         _CampoEtiquetado(
           label: 'Nombre',
           controller: _nombreCtrl,
+          habilitado: false,
         ),
 
         const SizedBox(height: 13),
@@ -509,6 +531,7 @@ class _PqrsScreenState extends State<PqrsScreen> {
           controller: _correoCtrl,
           keyboardType:
           TextInputType.emailAddress,
+          habilitado: false,
         ),
 
         const SizedBox(height: 13),
@@ -522,6 +545,7 @@ class _PqrsScreenState extends State<PqrsScreen> {
           controller: _telefonoCtrl,
           keyboardType:
           TextInputType.phone,
+          habilitado: false,
         ),
 
         const SizedBox(height: 13),
@@ -811,6 +835,7 @@ class _CampoEtiquetado extends StatelessWidget {
   final TextEditingController controller;
   final TextInputType keyboardType;
   final int lineas;
+  final bool habilitado;
 
   const _CampoEtiquetado({
     required this.label,
@@ -818,6 +843,7 @@ class _CampoEtiquetado extends StatelessWidget {
     this.keyboardType =
         TextInputType.text,
     this.lineas = 1,
+    this.habilitado = true,
   });
 
   @override
@@ -841,6 +867,7 @@ class _CampoEtiquetado extends StatelessWidget {
 
         TextField(
           controller: controller,
+          enabled: habilitado,
 
           keyboardType: keyboardType,
 

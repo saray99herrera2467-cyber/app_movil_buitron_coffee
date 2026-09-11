@@ -116,6 +116,7 @@ class PedidoService {
           .update({
             'numero_guia': guia,
             'transportadora': transportadora,
+            'estado': 'EN CAMINO',
           })
           .eq('id', id);
     } catch (e) {

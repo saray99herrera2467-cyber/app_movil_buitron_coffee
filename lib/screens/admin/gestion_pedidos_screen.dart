@@ -190,14 +190,34 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () async {
+                        if (guiaCtrl.text.trim().isEmpty || transportadoraCtrl.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('❌ Por favor ingresa el número de guía y la transportadora')),
+                          );
+                          return;
+                        }
+
+                        // Mostrar indicador de carga
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => const Center(child: CircularProgressIndicator(color: cafePrincipal)),
+                        );
+
                         try {
                           await PedidoService.actualizarSeguimiento(pedidoId, guiaCtrl.text.trim(), transportadoraCtrl.text.trim());
+                          
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seguimiento actualizado')));
-                            _cargarPedidos(); // ✅ Recargamos la lista para ver el cambio
+                            Navigator.pop(context); // Cerrar indicador de carga
+                            Navigator.pop(ctx); // Cerrar panel inferior (bottom sheet) del detalle del pedido
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('✅ Seguimiento guardado y pedido marcado EN CAMINO')),
+                            );
+                            _cargarPedidos(); // Recargar la lista para reflejar los cambios
                           }
                         } catch (e) {
                           if (mounted) {
+                            Navigator.pop(context); // Cerrar indicador de carga en caso de error
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                           }
                         }
@@ -269,6 +289,8 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
     switch (estado.toLowerCase()) {
       case 'entregado':
         return Colors.green;
+      case 'en camino':
+        return Colors.blue;
       case 'cancelado':
         return Colors.red;
       case 'pendiente':
@@ -347,6 +369,7 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                 children: [
                   _chipFiltro('Todos', 'todos', _pedidos.length),
                   _chipFiltro('Pendientes', 'pendiente', _contar('pendiente')),
+                  _chipFiltro('En Camino', 'en camino', _contar('en camino')),
                   _chipFiltro('Entregados', 'entregado', _contar('entregado')),
                   _chipFiltro('Cancelados', 'cancelado', _contar('cancelado')),
                 ],
@@ -412,7 +435,7 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                             children: [
                               Expanded(
                                 child: DropdownButtonFormField<String>(
-                                  initialValue: ['pendiente', 'entregado', 'cancelado'].contains(estado.toLowerCase()) ? estado.toLowerCase() : 'pendiente',
+                                  initialValue: ['pendiente', 'en camino', 'entregado', 'cancelado'].contains(estado.toLowerCase()) ? estado.toLowerCase() : 'pendiente',
                                   decoration: InputDecoration(
                                     isDense: true,
                                     filled: true,
@@ -421,6 +444,7 @@ class _GestionPedidosScreenState extends State<GestionPedidosScreen> {
                                   ),
                                   items: const [
                                     DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
+                                    DropdownMenuItem(value: 'en camino', child: Text('En Camino')),
                                     DropdownMenuItem(value: 'entregado', child: Text('Entregado')),
                                     DropdownMenuItem(value: 'cancelado', child: Text('Cancelado')),
                                   ],

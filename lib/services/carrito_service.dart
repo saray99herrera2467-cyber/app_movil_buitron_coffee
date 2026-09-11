@@ -1,24 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'auth_service.dart';
+
 class CarritoService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
-  // 📌 Obtener ID del usuario actual
+  // 📌 Obtener ID del usuario actual desde SharedPreferences y base de datos de manera robusta
   static Future<int?> _obtenerIdUsuarioActual() async {
-    final correo = _supabase.auth.currentUser?.email;
-    if (correo == null) return null;
-
-    try {
-      final respuesta = await _supabase
-          .from('usuario')
-          .select('id')
-          .eq('correo', correo)
-          .maybeSingle();
-      return respuesta?['id'] as int?;
-    } catch (e) {
-      return null;
-    }
+    return await AuthService.obtenerIdSesion();
   }
 
   // 🛒 OBTENER CARRITO
