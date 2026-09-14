@@ -1,50 +1,48 @@
-# Plan: Sincronización Total con el Esquema de Supabase (Diagrama)
+# Plan: Implementación de Subida de Imágenes Reales (Supabase Storage)
 
-Este plan asegura que el 100% del código de Flutter coincida con las tablas y columnas mostradas en las imágenes de tu base de datos, garantizando que no haya fallos al guardar pedidos, usuarios o productos.
+Este plan permite que el administrador seleccione fotos directamente desde su galería o cámara y las suba a la nube de Supabase, vinculándolas automáticamente a los productos.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Nombres con Ñ**: Se respetará el nombre de la tabla `reseñas`.
-> - **Nuevos Campos en Pedidos**: Se integrarán las columnas `referencia_pago` y `envio`.
-> - **Integridad de Usuario**: Se verificará que el campo `nombre_usuario` sea el que se use en todas las consultas.
+> - **Bucket en Supabase**: Para que esto funcione, debes entrar a tu panel de Supabase -> **Storage** y crear un **Bucket** llamado `productos`. Asegúrate de ponerlo como **Público**.
+> - **Dependencia**: Se agregará la librería `image_picker` para permitir el acceso a la cámara y galería.
 
 ## Proposed Changes
 
-### [Servicios Base]
+### [Configuración]
+
+#### [MODIFY] [pubspec.yaml](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/pubspec.yaml)
+- Añadir la dependencia `image_picker: ^1.1.2`.
 
 #### [MODIFY] [api_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/api_service.dart)
-- Definir todas las tablas del diagrama:
-    - `tablaRoles = 'rol'`
-    - `tablaUsuarios = 'usuario'`
-    - `tablaProductos = 'producto'`
-    - `tablaCarrito = 'carrito'`
-    - `tablaPedidos = 'pedido'`
-    - `tablaDetallePedido = 'detalle_pedido'`
-    - `tablaResenas = 'reseñas'`
-    - `tablaPqrs = 'pqrs'`
-    - `tablaVerificacionesEmail = 'verificaciones_email'`
-    - `tablaNotificacionesAdmin = 'notificaciones_admin'`
-    - `tablaPromociones = 'promociones'`
+- Añadir la constante `static const String bucketProductos = 'productos';`.
 
-### [Lógica de Pedidos]
+---
 
-#### [MODIFY] [pedido_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/pedido_service.dart)
-- Actualizar `crearPedido` para incluir `referencia_pago`, `envio` y asegurar el uso de `direccion`.
+### [Servicios]
 
-### [Modelos de Datos]
+#### [NEW] [storage_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/storage_service.dart)
+- Implementar métodos para:
+    - Seleccionar imagen desde galería/cámara.
+    - Subir archivo al bucket `productos`.
+    - Obtener la URL pública del archivo subido.
 
-#### [MODIFY] [producto.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/models/producto.dart)
-- Asegurar que `calificacion_promedio` sea `double` y `total_resenas` sea `int`.
+---
 
-#### [MODIFY] [resena.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/models/resena.dart)
-- Sincronizar campos: `producto_id`, `usuario_id`, `nombre_usuario`, `calificacion`, `comentario`, `fecha`, `estado`.
+### [Pantallas de Administrador]
+
+#### [MODIFY] [crear_producto_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/admin/crear_producto_screen.dart)
+- Añadir un botón visual para "Seleccionar Imagen".
+- Mostrar una vista previa de la foto elegida.
+- Modificar el guardado para que primero suba la imagen a Storage y luego guarde el producto con esa URL.
+
+#### [MODIFY] [actualizar_producto_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/admin/actualizar_producto_screen.dart)
+- Implementar la misma lógica para permitir cambiar la imagen de un producto existente.
 
 ## Verification Plan
 
-### Automated Tests
-- Ejecutar `flutter analyze` para confirmar consistencia.
-
 ### Manual Verification
-1. **Flujo de Compra**: Realizar un pedido y verificar en el panel de Supabase que los campos `envio` y `referencia_pago` se llenen correctamente.
-2. **Administrador**: Abrir la lista de usuarios y confirmar que se carguen desde la tabla `usuario` sin errores de columna.
+1. **Selección**: Abrir la pantalla de Crear Producto, tocar el botón de imagen y elegir una foto de la galería.
+2. **Subida**: Guardar el producto y verificar en el panel de Supabase -> Storage -> productos que la imagen esté ahí.
+3. **Visualización**: Confirmar que el nuevo producto aparece en el catálogo con la foto real.

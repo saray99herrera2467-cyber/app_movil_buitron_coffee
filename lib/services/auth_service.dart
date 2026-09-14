@@ -1,21 +1,33 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:crypto/crypto.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'api_service.dart';
 
 class AuthService {
+  // =========================================================
+  // CLIENTE SUPABASE
+  // =========================================================
+
   static SupabaseClient get _supabase => ApiService.supabase;
 
-  // Convierte la contraseña en un hash SHA-256
+  // =========================================================
+  // HASH DE CONTRASEÑA PARA LA TABLA usuario
+  // =========================================================
+
   static String _hashClave(String clave) {
     final bytes = utf8.encode(clave);
     final digest = sha256.convert(bytes);
     return digest.toString();
   }
 
-  // Registrar nuevo usuario en Supabase Auth y en la tabla usuario
+  // =========================================================
+  // REGISTRAR USUARIO
+  // =========================================================
+
   static Future<Map<String, dynamic>> registrar({
     required String nombreUsuario,
     required String apellido,
@@ -28,8 +40,11 @@ class AuthService {
     try {
       final correoNormalizado = correo.trim().toLowerCase();
 
-      // 1. Verificar duplicados manuales en la tabla usuario (Teléfono)
-      if (telefono != null && telefono.isNotEmpty) {
+      // -------------------------------------------------------
+      // Verificar teléfono duplicado
+      // -------------------------------------------------------
+
+      if (telefono != null && telefono.trim().isNotEmpty) {
         final existeTel = await _supabase
             .from(ApiService.tablaUsuarios)
             .select('id')
@@ -37,14 +52,23 @@ class AuthService {
             .maybeSingle();
 
         if (existeTel != null) {
-          throw Exception('El número telefónico ya está en uso');
+          throw Exception(
+            'El número telefónico ya está en uso.',
+          );
         }
       }
 
-      // 2. Registrar en Supabase Auth (esto dispara el correo de confirmación)
-      final AuthResponse authRes = await _supabase.auth.signUp(
+      // -------------------------------------------------------
+      // Crear usuario en Supabase Auth
+      //
+      // Esto utiliza la plantilla:
+      // Authentication > Email Templates > Confirm signup
+      // -------------------------------------------------------
+
+      final AuthResponse authRes =
+      await _supabase.auth.signUp(
         email: correoNormalizado,
-        password: clave, // Supabase Auth maneja su propio hasheo
+        password: clave,
         data: {
           'nombre_usuario': nombreUsuario,
           'apellido': apellido,
@@ -55,10 +79,15 @@ class AuthService {
       );
 
       if (authRes.user == null) {
-        throw Exception('No se pudo crear el usuario en el servicio de autenticación');
+        throw Exception(
+          'No se pudo crear el usuario en Supabase Auth.',
+        );
       }
 
-      // 3. Insertar en la tabla 'usuario' para mantener compatibilidad con el resto de la app
+      // -------------------------------------------------------
+      // Crear usuario en nuestra tabla usuario
+      // -------------------------------------------------------
+
       final respuesta = await _supabase
           .from(ApiService.tablaUsuarios)
           .insert({
@@ -67,235 +96,603 @@ class AuthService {
         'correo': correoNormalizado,
         'documento': documento ?? '',
         'telefono': telefono ?? '',
-        'direccion': direccion ?? '', 
-        'clave': _hashClave(clave), // Mantenemos el hash manual solo para la tabla si es necesario
-        'id_rol': 1, 
-        'estado': true, // ✅ Activo por defecto mientras se arregla el correo
-      }).select().single();
+        'direccion': direccion ?? '',
+        'clave': _hashClave(clave),
+        'id_rol': 1,
+
+        // Se activa después de verificar el código.
+        'estado': false,
+      })
+          .select()
+          .single();
 
       return respuesta;
     } on AuthException catch (e) {
       throw Exception(e.message);
     } on PostgrestException catch (e) {
       if (e.code == '23505') {
-        throw Exception('El correo o documento ya está registrado');
+        throw Exception(
+          'El correo o documento ya está registrado.',
+        );
       }
-      throw Exception('Error en la base de datos: ${e.message}');
+
+      throw Exception(
+        'Error en la base de datos: ${e.message}',
+      );
     } catch (e) {
-      throw Exception(e.toString());
+      throw Exception(
+        e.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 
-  // Enviar correo para restablecer contraseña
+  // =========================================================
+  // RECUPERAR CONTRASEÑA
+  // =========================================================
+  //
+  // IMPORTANTE:
+  // NO usamos auth.resend() aquí.
+  //
+  // resetPasswordForEmail() es el método correcto para
+  // solicitar nuevamente el correo de recuperación.
+  //
+  // Supabase utilizará:
+  // Authentication > Email Templates > Reset password
+  //
+  // Esa plantilla debe contener:
+  //
+  // {{ .Token }}
+  //
+  // =========================================================
+
   static Future<void> recuperarClave(String email) async {
+    final correo = email.trim().toLowerCase();
+
+    if (correo.isEmpty) {
+      throw Exception(
+        'Ingresa tu correo electrónico.',
+      );
+    }
+
     try {
       await _supabase.auth.resetPasswordForEmail(
-        email.trim().toLowerCase(),
-        // Opcional: redirectTo: 'io.supabase.buitroncoffee://reset-password',
+        correo,
       );
     } on AuthException catch (e) {
-      throw Exception(e.message);
+      final mensaje = e.message.toLowerCase();
+
+      if (mensaje.contains('rate limit') ||
+          mensaje.contains('60 seconds') ||
+          mensaje.contains('after 60') ||
+          mensaje.contains('too many')) {
+        throw Exception(
+          'Debes esperar 60 segundos antes de solicitar '
+              'otro código.',
+        );
+      }
+
+      throw Exception(
+        'No se pudo solicitar la recuperación: ${e.message}',
+      );
     } catch (e) {
-      throw Exception('Error al solicitar recuperación: $e');
+      throw Exception(
+        'Error al solicitar recuperación: $e',
+      );
     }
   }
 
-  // Actualizar contraseña (usado tras recuperación por email)
-  static Future<void> actualizarClave(String nuevaClave) async {
-    try {
-      await _supabase.auth.updateUser(
-        UserAttributes(password: nuevaClave),
+  // =========================================================
+  // ACTUALIZAR CONTRASEÑA
+  // =========================================================
+  //
+  // Este método se ejecuta DESPUÉS de verificar el código
+  // de recuperación.
+  //
+  // verifyOTP con OtpType.recovery establece la sesión.
+  // =========================================================
+
+  static Future<void> actualizarClave(
+      String nuevaClave,
+      ) async {
+    if (nuevaClave.trim().isEmpty) {
+      throw Exception(
+        'La contraseña no puede estar vacía.',
       );
-      
-      // Opcional: También actualizar en la tabla usuario si manejas hash manual ahí
-      final correo = _supabase.auth.currentUser?.email;
+    }
+
+    try {
+      // -------------------------------------------------------
+      // Comprobar sesión de recuperación
+      // -------------------------------------------------------
+
+      final session = _supabase.auth.currentSession;
+
+      if (session == null) {
+        throw Exception(
+          'La sesión de recuperación no está activa. '
+              'Solicita nuevamente el código.',
+        );
+      }
+
+      // -------------------------------------------------------
+      // Actualizar contraseña en Supabase Auth
+      // -------------------------------------------------------
+
+      final respuesta = await _supabase.auth.updateUser(
+        UserAttributes(
+          password: nuevaClave,
+        ),
+      );
+
+      if (respuesta.user == null) {
+        throw Exception(
+          'No se pudo actualizar la contraseña.',
+        );
+      }
+
+      // -------------------------------------------------------
+      // Actualizar también la contraseña de nuestra tabla
+      // usuario
+      // -------------------------------------------------------
+
+      final correo =
+          _supabase.auth.currentUser?.email;
+
       if (correo != null) {
         await _supabase
             .from(ApiService.tablaUsuarios)
-            .update({'clave': _hashClave(nuevaClave)})
-            .eq('correo', correo);
+            .update({
+          'clave': _hashClave(nuevaClave),
+        })
+            .eq(
+          'correo',
+          correo.trim().toLowerCase(),
+        );
       }
     } on AuthException catch (e) {
-      throw Exception(e.message);
+      throw Exception(
+        'Error de autenticación: ${e.message}',
+      );
+    } on PostgrestException catch (e) {
+      throw Exception(
+        'La contraseña de la tabla no pudo actualizarse: '
+            '${e.message}',
+      );
     } catch (e) {
-      throw Exception('Error al actualizar la contraseña: $e');
+      throw Exception(
+        e.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 
-  // Verificar el código OTP enviado al correo (Genérico para Registro y Recuperación)
-  static Future<void> verificarCodigo(String email, String token, {bool esRecuperacion = false}) async {
+  // =========================================================
+  // VERIFICAR CÓDIGO OTP
+  // =========================================================
+  //
+  // REGISTRO:
+  // OtpType.email
+  //
+  // RECUPERACIÓN:
+  // OtpType.recovery
+  //
+  // =========================================================
+
+  static Future<void> verificarCodigo(
+      String email,
+      String token, {
+        bool esRecuperacion = false,
+      }) async {
+    final correo = email.trim().toLowerCase();
+    final codigo = token.trim();
+
+    // -------------------------------------------------------
+    // Validar código
+    // -------------------------------------------------------
+
+    if (codigo.length != 6) {
+      throw Exception(
+        'El código debe tener 6 dígitos.',
+      );
+    }
+
+    if (!RegExp(r'^\d{6}$').hasMatch(codigo)) {
+      throw Exception(
+        'El código solo puede contener números.',
+      );
+    }
+
     try {
+      // -----------------------------------------------------
+      // Verificar OTP
+      // -----------------------------------------------------
+
+      final AuthResponse respuesta =
       await _supabase.auth.verifyOTP(
-        email: email.toLowerCase().trim(),
-        token: token.trim(),
-        type: esRecuperacion ? OtpType.recovery : OtpType.signup,
+        email: correo,
+        token: codigo,
+        type: esRecuperacion
+            ? OtpType.recovery
+            : OtpType.email,
       );
 
-      // Si es registro exitoso, activamos al usuario en la tabla
+      // -----------------------------------------------------
+      // Comprobar usuario
+      // -----------------------------------------------------
+
+      if (respuesta.user == null) {
+        throw Exception(
+          'No se pudo verificar el código.',
+        );
+      }
+
+      // -----------------------------------------------------
+      // REGISTRO
+      // -----------------------------------------------------
+      //
+      // Solo en registro cambiamos estado a true.
+      //
+      // En recuperación NO modificamos estado.
+      // -----------------------------------------------------
+
       if (!esRecuperacion) {
         await _supabase
             .from(ApiService.tablaUsuarios)
-            .update({'estado': true})
-            .eq('correo', email.toLowerCase().trim());
+            .update({
+          'estado': true,
+        })
+            .eq(
+          'correo',
+          correo,
+        );
       }
-    } on AuthException catch (e) {
-      throw Exception('Código inválido o expirado: ${e.message}');
-    } catch (e) {
-      throw Exception('Error al verificar: $e');
-    }
-  }
 
-  // Reenviar el código de verificación al correo (Genérico)
-  static Future<void> reenviarCodigo(String email, {bool esRecuperacion = false}) async {
-    try {
-      await _supabase.auth.resend(
-        type: esRecuperacion ? OtpType.recovery : OtpType.signup,
-        email: email.trim().toLowerCase(),
+      // -----------------------------------------------------
+      // RECUPERACIÓN
+      // -----------------------------------------------------
+      //
+      // verifyOTP con OtpType.recovery establece la sesión
+      // que posteriormente utilizará actualizarClave().
+      // -----------------------------------------------------
+    } on AuthException catch (e) {
+      final mensaje = e.message.toLowerCase();
+
+      if (mensaje.contains('expired') ||
+          mensaje.contains('invalid') ||
+          mensaje.contains('otp_expired') ||
+          mensaje.contains('token has expired')) {
+        throw Exception(
+          'El código es inválido o ya expiró. '
+              'Solicita un código nuevo.',
+        );
+      }
+
+      throw Exception(
+        'Error al verificar el código: ${e.message}',
       );
-    } on AuthException catch (e) {
-      if (e.message.contains('60 seconds')) {
-        throw Exception('Por favor espera un minuto antes de reenviar el código.');
-      }
-      throw Exception('Error al reenviar: ${e.message}');
     } catch (e) {
-      throw Exception('Error inesperado al reenviar: $e');
+      throw Exception(
+        e.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 
-  // Iniciar sesión (Híbrido: Supabase Auth -> Fallback a Tabla usuario)
+  // =========================================================
+  // REENVIAR CÓDIGO
+  // =========================================================
+  //
+  // REGISTRO:
+  // auth.resend(OtpType.email)
+  //
+  // RECUPERACIÓN:
+  // resetPasswordForEmail()
+  //
+  // =========================================================
+
+  static Future<void> reenviarCodigo(
+      String email, {
+        bool esRecuperacion = false,
+      }) async {
+    final correo = email.trim().toLowerCase();
+
+    if (correo.isEmpty) {
+      throw Exception(
+        'El correo electrónico es obligatorio.',
+      );
+    }
+
+    try {
+      // -------------------------------------------------------
+      // RECUPERACIÓN
+      // -------------------------------------------------------
+
+      if (esRecuperacion) {
+        await _supabase.auth.resetPasswordForEmail(
+          correo,
+        );
+      }
+
+      // -------------------------------------------------------
+      // REGISTRO
+      // -------------------------------------------------------
+
+      else {
+        await _supabase.auth.resend(
+          type: OtpType.email,
+          email: correo,
+        );
+      }
+    } on AuthException catch (e) {
+      final mensaje = e.message.toLowerCase();
+
+      if (mensaje.contains('60 seconds') ||
+          mensaje.contains('rate limit') ||
+          mensaje.contains('too many') ||
+          mensaje.contains('after 60')) {
+        throw Exception(
+          'Por favor espera 60 segundos antes '
+              'de solicitar otro código.',
+        );
+      }
+
+      throw Exception(
+        'Error al reenviar: ${e.message}',
+      );
+    } catch (e) {
+      throw Exception(
+        'Error inesperado al reenviar: $e',
+      );
+    }
+  }
+
+  // =========================================================
+  // INICIAR SESIÓN
+  // =========================================================
+
   static Future<Map<String, dynamic>> login({
     required String correo,
     required String clave,
   }) async {
-    final correoNormalizado = correo.trim().toLowerCase();
-    
+    final correoNormalizado =
+    correo.trim().toLowerCase();
+
+    // -------------------------------------------------------
+    // Intentar iniciar sesión mediante Supabase Auth
+    // -------------------------------------------------------
+
     try {
-      // 1. Intentar sesión en Supabase Auth (Método moderno)
-      final AuthResponse authRes = await _supabase.auth.signInWithPassword(
+      final AuthResponse authRes =
+      await _supabase.auth.signInWithPassword(
         email: correoNormalizado,
         password: clave,
       );
 
       if (authRes.user != null) {
-        // Si el usuario existe en Auth, verificamos sus datos adicionales en la tabla
         final respuesta = await _supabase
             .from(ApiService.tablaUsuarios)
             .select()
-            .eq('correo', correoNormalizado)
+            .eq(
+          'correo',
+          correoNormalizado,
+        )
             .maybeSingle();
 
         if (respuesta != null) {
-          await _guardarSesionLocal(correoNormalizado, respuesta['id_rol'] ?? 1);
+          await _guardarSesionLocal(
+            correoNormalizado,
+            respuesta['id_rol'] ?? 1,
+          );
+
           return respuesta;
         }
       }
     } catch (e) {
-      // Si falla Supabase Auth (por no estar confirmado o no existir), probamos el RESCATE
-      debugPrint('Supabase Auth falló, intentando rescate por tabla: $e');
+      debugPrint(
+        'Supabase Auth falló, intentando rescate por tabla: $e',
+      );
     }
 
-    // 2. MODO RESCATE: Validar directamente contra la tabla 'usuario' (Método antiguo)
+    // -------------------------------------------------------
+    // MODO RESCATE
+    // -------------------------------------------------------
+
     try {
-      final claveHasheada = _hashClave(clave);
+      final claveHasheada =
+      _hashClave(clave);
+
       final respuesta = await _supabase
           .from(ApiService.tablaUsuarios)
           .select()
-          .eq('correo', correoNormalizado)
-          .eq('clave', claveHasheada)
+          .eq(
+        'correo',
+        correoNormalizado,
+      )
+          .eq(
+        'clave',
+        claveHasheada,
+      )
+          .eq(
+        'estado',
+        true,
+      )
           .maybeSingle();
 
       if (respuesta != null) {
-        await _guardarSesionLocal(correoNormalizado, respuesta['id_rol'] ?? 1);
+        await _guardarSesionLocal(
+          correoNormalizado,
+          respuesta['id_rol'] ?? 1,
+        );
+
         return respuesta;
       }
     } catch (e) {
-      debugPrint('Rescate por tabla falló: $e');
+      debugPrint(
+        'Rescate por tabla falló: $e',
+      );
     }
 
-    throw Exception('Correo o contraseña incorrectos');
+    throw Exception(
+      'Correo o contraseña incorrectos.',
+    );
   }
 
-  // Helper para guardar sesión
-  static Future<void> _guardarSesionLocal(String correo, int rol) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('usuario_correo', correo);
-    await prefs.setInt('usuario_rol', rol);
+  // =========================================================
+  // GUARDAR SESIÓN LOCAL
+  // =========================================================
+
+  static Future<void> _guardarSesionLocal(
+      String correo,
+      int rol,
+      ) async {
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    await prefs.setString(
+      'usuario_correo',
+      correo,
+    );
+
+    await prefs.setInt(
+      'usuario_rol',
+      rol,
+    );
   }
 
-  // Cerrar sesión local y en Supabase
+  // =========================================================
+  // CERRAR SESIÓN
+  // =========================================================
+
   static Future<void> logout() async {
     try {
-      await _supabase.auth.signOut(); // ✅ Invalida el token en el servidor
+      await _supabase.auth.signOut();
     } catch (_) {}
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('usuario_correo');
-    await prefs.remove('usuario_rol');
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    await prefs.remove(
+      'usuario_correo',
+    );
+
+    await prefs.remove(
+      'usuario_rol',
+    );
   }
 
-  // Obtener el perfil del usuario autenticado actualmente por token
-  static Future<Map<String, dynamic>?> obtenerPerfilActual() async {
-    final user = _supabase.auth.currentUser;
-    if (user == null || user.email == null) return null;
+  // =========================================================
+  // OBTENER PERFIL ACTUAL
+  // =========================================================
+
+  static Future<Map<String, dynamic>?>
+  obtenerPerfilActual() async {
+    final user =
+        _supabase.auth.currentUser;
+
+    if (user == null || user.email == null) {
+      return null;
+    }
 
     try {
       final respuesta = await _supabase
           .from(ApiService.tablaUsuarios)
           .select()
-          .eq('correo', user.email!)
+          .eq(
+        'correo',
+        user.email!,
+      )
           .maybeSingle();
-      
+
       return respuesta;
     } catch (e) {
-      debugPrint('Error al obtener perfil por token: $e');
+      debugPrint(
+        'Error al obtener perfil por token: $e',
+      );
+
       return null;
     }
   }
 
-  // Obtener todos los usuarios (para el administrador)
-  static Future<List<dynamic>> obtenerTodosUsuarios() async {
+  // =========================================================
+  // OBTENER TODOS LOS USUARIOS
+  // =========================================================
+
+  static Future<List<dynamic>>
+  obtenerTodosUsuarios() async {
     try {
       return await _supabase
           .from(ApiService.tablaUsuarios)
           .select()
-          .order('id', ascending: true);
+          .order(
+        'id',
+        ascending: true,
+      );
     } catch (e) {
-      debugPrint('Error obteniendo usuarios: $e');
+      debugPrint(
+        'Error obteniendo usuarios: $e',
+      );
+
       rethrow;
     }
   }
 
-  // Obtener correo de la sesión guardada
-  static Future<String?> obtenerCorreoSesion() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('usuario_correo');
+  // =========================================================
+  // OBTENER CORREO DE SESIÓN
+  // =========================================================
+
+  static Future<String?>
+  obtenerCorreoSesion() async {
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    return prefs.getString(
+      'usuario_correo',
+    );
   }
 
-  // Obtener ID del usuario de la sesión guardada
+  // =========================================================
+  // OBTENER ID DE SESIÓN
+  // =========================================================
+
   static Future<int?> obtenerIdSesion() async {
-    final correo = await obtenerCorreoSesion();
-    if (correo == null) return null;
+    final correo =
+    await obtenerCorreoSesion();
+
+    if (correo == null) {
+      return null;
+    }
 
     try {
       final res = await _supabase
           .from(ApiService.tablaUsuarios)
           .select('id')
-          .eq('correo', correo)
+          .eq(
+        'correo',
+        correo,
+      )
           .maybeSingle();
-      
+
       return res?['id'] as int?;
     } catch (e) {
       return null;
     }
   }
 
-  // Obtener datos del usuario por ID
-  static Future<Map<String, dynamic>> obtenerUsuario(int usuarioId) async {
+  // =========================================================
+  // OBTENER USUARIO POR ID
+  // =========================================================
+
+  static Future<Map<String, dynamic>>
+  obtenerUsuario(
+      int usuarioId,
+      ) async {
     final respuesta = await _supabase
         .from(ApiService.tablaUsuarios)
         .select()
-        .eq('id', usuarioId)
+        .eq(
+      'id',
+      usuarioId,
+    )
         .single();
+
     return respuesta;
   }
 }
