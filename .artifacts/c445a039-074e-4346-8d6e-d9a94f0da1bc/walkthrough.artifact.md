@@ -1,35 +1,34 @@
-# Walkthrough: Carrito en la Nube, Nombres Reales y Ajustes de Interfaz
+# Walkthrough: Seguridad por Token y Control de Roles
 
-He completado una actualización integral para mejorar la privacidad, la validación de datos y la experiencia de usuario en Buitrón Coffee.
+He implementado un sistema avanzado de gestión de sesiones basado en los tokens de Supabase. Esto no solo mejora la seguridad, sino que también automatiza el acceso de los usuarios a la aplicación.
 
 ## Cambios Realizados
 
-### [Seguridad y Privacidad del Carrito]
+### [Seguridad de Sesión]
 
-#### [carrito_provider.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/providers/carrito_provider.dart)
-- **Sincronización de Nube**: El carrito ahora es persistente. Cuando agregas un producto, se guarda automáticamente en Supabase vinculado a tu cuenta.
-- **Privacidad Total**: Al iniciar o cerrar sesión, la memoria local se limpia. Esto garantiza que cada usuario vea **exclusivamente sus productos** y nunca los de otra cuenta.
+#### [auth_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/auth_service.dart)
+- **Cierre de Sesión Global**: El método `logout()` ahora llama a `supabase.auth.signOut()`. Esto invalida el token tanto en el dispositivo como en los servidores de Supabase, garantizando que nadie más pueda usar esa sesión.
+- **Validación de Identidad**: Se añadió el método `obtenerPerfilActual()`, que recupera los datos del usuario (incluyendo su rol) directamente desde la base de datos usando el token de seguridad activo.
 
-### [Validación de Identidad Real]
+### [Navegación Inteligente]
 
-#### [registro_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/registro_screen.dart) / [perfil_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/perfil_screen.dart)
-- **Nombres Verdaderos**: Se implementó una regla que rechaza números o símbolos en los nombres y apellidos. Si la validación falla, aparece el mensaje: **"Por favor, complete su nombre verdadero"**.
-- **Bloqueo Numérico**: Los campos de Teléfono y Documento ahora filtran la entrada a nivel de teclado. El sistema ignora cualquier letra o símbolo; solo permite dígitos.
+#### [main.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/main.dart)
+- **RouteGuard (Muro de Seguridad)**: He creado un nuevo componente que actúa como portero de la aplicación. Su funcionamiento es el siguiente:
+  1. Revisa si hay un token de usuario activo al abrir la app.
+  2. Si no hay token, muestra la pantalla de **Login**.
+  3. Si hay token, consulta el rol del usuario en la base de datos.
+  4. Redirige automáticamente al **Panel Admin** (si es id_rol=2) o al **Catálogo** (si es cliente).
 
-### [Ajustes de Interfaz (UI)]
+## Beneficios del Sistema
 
-#### [carrito_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/carrito_screen.dart)
-- **Botones Elevados**: Se incrementó drásticamente el espacio inferior para **subir los botones de "CANCELAR" y "FINALIZAR"**. Esto mejora la accesibilidad y evita que se oculten con la barra del sistema.
-
-### [Arquitectura y Organización (Servicios)]
-
-#### [pqrs_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/pqrs_screen.dart) / [pqrs_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/pqrs_service.dart)
-- **Migración de API**: Se movió la lógica de envío de PQRS al servicio correspondiente, cumpliendo con la directriz de mantener las llamadas a Supabase centralizadas.
+1. **Auto-Login**: Los usuarios ya no tienen que escribir su contraseña cada vez que abren la app. Si no cerraron sesión, entrarán directo a su contenido.
+2. **Protección de Roles**: Es técnicamente imposible que un cliente vea el panel de administrador, ya que el sistema valida el rol contra la base de datos en cada inicio.
+3. **Privacidad Multiusuario**: Al cerrar sesión, se borra todo rastro del token, obligando a cualquier nueva persona a identificarse desde cero.
 
 ## Resultados de Verificación
 
-- El código fue validado con `flutter analyze` y cumple con los estándares de Flutter.
-- Se aseguraron los tipos de retorno asíncronos para todas las operaciones que interactúan con la base de datos.
+- Se realizó un análisis con `flutter analyze` confirmando la integridad del código.
+- El flujo de `StreamBuilder` asegura que la app reaccione instantáneamente a los cambios de estado de autenticación.
 
 > [!TIP]
-> **Prueba esto**: Inicia sesión en un teléfono, agrega un café, cierra sesión y entra en otro teléfono con la misma cuenta. ¡Tu café aparecerá allí mágicamente porque ahora está en la nube!
+> **Prueba de Oro**: Inicia sesión, cierra la app (mátala desde el administrador de tareas del celular) y vuelve a abrirla. Entrarás directamente a tu cuenta sin pasar por el Login. Luego prueba a cerrar sesión y verás que ahora sí te pide los datos.

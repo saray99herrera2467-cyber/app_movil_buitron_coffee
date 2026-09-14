@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'catalogo_screen.dart';
 
+import 'restablecer_clave_screen.dart';
+
 class VerificacionScreen extends StatefulWidget {
   final String email;
-  const VerificacionScreen({super.key, required this.email});
+  final bool esRecuperacion; // ✅ Nuevo: identifica si es para cambio de clave
+  
+  const VerificacionScreen({
+    super.key, 
+    required this.email, 
+    this.esRecuperacion = false
+  });
 
   @override
   State<VerificacionScreen> createState() => _VerificacionScreenState();
@@ -27,20 +35,33 @@ class _VerificacionScreenState extends State<VerificacionScreen> {
     setState(() => _cargando = true);
 
     try {
-      await AuthService.verificarCodigo(widget.email, _codigoIngresado);
+      await AuthService.verificarCodigo(
+        widget.email, 
+        _codigoIngresado, 
+        esRecuperacion: widget.esRecuperacion
+      );
 
       if (!mounted) return;
 
-      _mostrarMensaje('¡Cuenta verificada con éxito!', exito: true);
+      _mostrarMensaje('¡Código verificado con éxito!', exito: true);
 
       // Pequeña espera para que vea el mensaje
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const CatalogoScreen()),
-        );
+        if (widget.esRecuperacion) {
+          // Si es recuperación, lo mandamos a cambiar la clave
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const RestablecerClaveScreen()),
+          );
+        } else {
+          // Si es registro, lo mandamos al catálogo
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const CatalogoScreen()),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -53,7 +74,7 @@ class _VerificacionScreenState extends State<VerificacionScreen> {
   Future<void> _reenviarCodigo() async {
     setState(() => _cargando = true);
     try {
-      await AuthService.reenviarCodigo(widget.email);
+      await AuthService.reenviarCodigo(widget.email, esRecuperacion: widget.esRecuperacion);
       if (mounted) {
         _mostrarMensaje('Código reenviado con éxito a tu correo.', exito: true);
         setState(() => _cargando = false);

@@ -1,29 +1,50 @@
-# Plan: Solución Definitiva de Creación de Productos y Ajuste Visual de Detalle
+# Plan: Sincronización Total con el Esquema de Supabase (Diagrama)
 
-Este plan aborda el error de duplicidad de ID en la creación de productos mediante un saneamiento estricto de datos y optimiza la visibilidad de los botones en la pantalla de detalle del producto.
+Este plan asegura que el 100% del código de Flutter coincida con las tablas y columnas mostradas en las imágenes de tu base de datos, garantizando que no haya fallos al guardar pedidos, usuarios o productos.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Sincronización de Base de Datos**: Si tras aplicar este cambio el error persiste, será necesario ejecutar una instrucción SQL en tu consola de Supabase para sincronizar el contador de IDs (Sequence), ya que la base de datos podría estar intentando asignar un número que ya existe.
-> - **Ajuste de Interfaz**: Se elevarán significativamente los botones en la pantalla de detalle para asegurar que no interfieran con la barra de navegación del celular.
+> - **Nombres con Ñ**: Se respetará el nombre de la tabla `reseñas`.
+> - **Nuevos Campos en Pedidos**: Se integrarán las columnas `referencia_pago` y `envio`.
+> - **Integridad de Usuario**: Se verificará que el campo `nombre_usuario` sea el que se use en todas las consultas.
 
 ## Proposed Changes
 
-### [Servicios]
+### [Servicios Base]
 
-#### [MODIFY] [producto_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/producto_service.dart)
-- Reforzar `crearProducto` para enviar únicamente las columnas de datos necesarias, garantizando que el campo `id` nunca se envíe a Supabase. Esto forzará a la base de datos a usar su generador automático de IDs.
+#### [MODIFY] [api_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/api_service.dart)
+- Definir todas las tablas del diagrama:
+    - `tablaRoles = 'rol'`
+    - `tablaUsuarios = 'usuario'`
+    - `tablaProductos = 'producto'`
+    - `tablaCarrito = 'carrito'`
+    - `tablaPedidos = 'pedido'`
+    - `tablaDetallePedido = 'detalle_pedido'`
+    - `tablaResenas = 'reseñas'`
+    - `tablaPqrs = 'pqrs'`
+    - `tablaVerificacionesEmail = 'verificaciones_email'`
+    - `tablaNotificacionesAdmin = 'notificaciones_admin'`
+    - `tablaPromociones = 'promociones'`
 
----
+### [Lógica de Pedidos]
 
-### [Screens]
+#### [MODIFY] [pedido_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/pedido_service.dart)
+- Actualizar `crearPedido` para incluir `referencia_pago`, `envio` y asegurar el uso de `direccion`.
 
-#### [MODIFY] [detalle_producto_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/detalle_producto_screen.dart)
-- Incrementar el padding inferior del contenedor de botones a **85px** (antes 45px) para que aparezcan mucho más arriba y sean fáciles de tocar.
+### [Modelos de Datos]
+
+#### [MODIFY] [producto.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/models/producto.dart)
+- Asegurar que `calificacion_promedio` sea `double` y `total_resenas` sea `int`.
+
+#### [MODIFY] [resena.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/models/resena.dart)
+- Sincronizar campos: `producto_id`, `usuario_id`, `nombre_usuario`, `calificacion`, `comentario`, `fecha`, `estado`.
 
 ## Verification Plan
 
+### Automated Tests
+- Ejecutar `flutter analyze` para confirmar consistencia.
+
 ### Manual Verification
-1. **Admin**: Crear un producto nuevo. Si falla, el error confirmará si la "Sequence" de Postgres está desincronizada.
-2. **Usuario**: Abrir un producto y verificar que el botón "AGREGAR AL CARRITO" esté posicionado cómodamente arriba.
+1. **Flujo de Compra**: Realizar un pedido y verificar en el panel de Supabase que los campos `envio` y `referencia_pago` se llenen correctamente.
+2. **Administrador**: Abrir la lista de usuarios y confirmar que se carguen desde la tabla `usuario` sin errores de columna.
