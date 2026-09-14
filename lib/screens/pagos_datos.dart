@@ -128,6 +128,7 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
               label: 'Nombre completo',
               icono: Icons.person_outline,
               formatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ ]'))],
+              habilitado: false,
             ),
             const SizedBox(height: 16),
             _campoTexto(
@@ -137,6 +138,7 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
               tipo: TextInputType.phone,
               formatters: [FilteringTextInputFormatter.digitsOnly],
               maxL: 10,
+              habilitado: false,
             ),
             const SizedBox(height: 24),
 
