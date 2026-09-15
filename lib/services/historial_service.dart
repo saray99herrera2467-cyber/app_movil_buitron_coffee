@@ -47,7 +47,7 @@ class HistorialService {
     try {
       final detalles = await _supabase
           .from('detalle_pedido')
-          .select('*, producto(*)')
+          .select('*, id_producto(*)') // ✅ Usamos el nombre de la columna directamente
           .eq('id_pedido', idPedido);
 
       return detalles;

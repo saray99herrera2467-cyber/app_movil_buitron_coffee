@@ -1,158 +1,286 @@
 import 'package:flutter/material.dart';
+import '../services/pagos_service.dart';
+import 'catalogo_screen.dart';
+import 'pse_datos_screen.dart';
 
 class PagosScreen extends StatefulWidget {
-  const PagosScreen({super.key});
+  final double total;
+  final List<Map<String, dynamic>> items;
+  final String correo;
+  final String nombreCompleto;
+  final String telefono;
+  final String direccion;
+
+  const PagosScreen({
+    super.key,
+    required this.total,
+    required this.items,
+    required this.correo,
+    required this.nombreCompleto,
+    required this.telefono,
+    required this.direccion,
+  });
 
   @override
   State<PagosScreen> createState() => _PagosScreenState();
 }
 
 class _PagosScreenState extends State<PagosScreen> {
-  static const Color _colorPrimario = Color(0xFF8B1E1E);
-  static const Color _colorFondo = Color(0xFFF9F6F6);
-  static const Color _colorNequi = Color(0xFFFF4D6D);
+  String _metodoSeleccionado = 'nequi';
+
+  static const Map<String, String> _codigoBancoPorMetodo = {
+    'nequi': '1060',
+    'daviplata': '1801',
+  };
+
+  void _irAFormularioPago() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PseDatosScreen(
+          total: widget.total,
+          items: widget.items,
+          correo: widget.correo,
+          nombreCompleto: widget.nombreCompleto,
+          telefono: widget.telefono,
+          direccion: widget.direccion,
+          bancoPreseleccionado: _codigoBancoPorMetodo[_metodoSeleccionado],
+        ),
+      ),
+    );
+  }
+
+  void _confirmar() {
+    _irAFormularioPago();
+  }
+
+  String get _textoInfo {
+    switch (_metodoSeleccionado) {
+      case 'nequi':
+        return 'Al continuar completarás tu pago vía Nequi de forma segura.';
+      case 'daviplata':
+        return 'Al continuar completarás tu pago vía Daviplata de forma segura.';
+      default:
+        return 'Al continuar podrás elegir tu banco y completar el pago vía PSE de forma segura.';
+    }
+  }
+
+  String get _textoBoton {
+    switch (_metodoSeleccionado) {
+      case 'nequi':
+        return 'CONTINUAR CON NEQUI';
+      case 'daviplata':
+        return 'CONTINUAR CON DAVIPLATA';
+      default:
+        return 'CONTINUAR CON PSE';
+    }
+  }
+
+  static const Color cafePrincipal = Color(0xFF4E342E);
+  static const Color crema = Color(0xFFF5EFE6);
+  static const Color cremaClaro = Color(0xFFFFFCF7);
+  static const Color dorado = Color(0xFFC8A45D);
+  static const Color textoOscuro = Color(0xFF3A2925);
+  static const Color textoSuave = Color(0xFF756860);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _colorFondo,
-
+      backgroundColor: crema,
       appBar: AppBar(
-        leading: const BackButton(color: Colors.white),
-        backgroundColor: _colorPrimario,
+        backgroundColor: cafePrincipal,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const CatalogoScreen()),
+            );
+          },
+        ),
+        title: const Text(
+          'BUITRÓN COFFEE',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
+        ),
+        centerTitle: true,
       ),
-
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              color: _colorPrimario,
-              child: const Text(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 25),
+              const Text(
                 'Pagos',
-                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
+                  color: cafePrincipal,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-
-            const Padding(
-              padding: EdgeInsets.all(10),
-              child: Text(
-                'Pagos',
-                style: TextStyle(
-                  color: _colorPrimario,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+              const SizedBox(height: 6),
+              const Text(
+                'Selecciona tu método de pago',
+                style: TextStyle(color: textoSuave, fontSize: 14),
               ),
-            ),
+              const SizedBox(height: 20),
 
-            const SizedBox(height: 20),
-
-            Center(
-              child: Column(
+              Row(
                 children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: _colorNequi,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.credit_card,
-                      color: Colors.white,
-                      size: 36,
+                  Expanded(
+                    child: _TarjetaMetodo(
+                      titulo: 'Nequi',
+                      icono: Icons.account_balance_wallet_outlined,
+                      seleccionado: _metodoSeleccionado == 'nequi',
+                      onTap: () => setState(() => _metodoSeleccionado = 'nequi'),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Nequi',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _TarjetaMetodo(
+                      titulo: 'Daviplata',
+                      icono: Icons.smartphone_outlined,
+                      seleccionado: _metodoSeleccionado == 'daviplata',
+                      onTap: () => setState(() => _metodoSeleccionado = 'daviplata'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _TarjetaMetodo(
+                      titulo: 'PSE',
+                      icono: Icons.account_balance_outlined,
+                      seleccionado: _metodoSeleccionado == 'pse',
+                      onTap: () => setState(() => _metodoSeleccionado = 'pse'),
                     ),
                   ),
                 ],
               ),
-            ),
 
-            const SizedBox(height: 35),
+              const SizedBox(height: 25),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Ingrese su número',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
+              Center(
+                child: Text(
+                  'Total a pagar: \$${widget.total.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: dorado,
+                  ),
                 ),
               ),
-            ),
 
+              const SizedBox(height: 25),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cremaClaro,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: cafePrincipal),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _textoInfo,
+                        style: const TextStyle(fontSize: 13, color: textoSuave),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              Center(
+                child: SizedBox(
+                  width: 260,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _confirmar,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cafePrincipal,
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text(
+                      _textoBoton,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TarjetaMetodo extends StatelessWidget {
+  final String titulo;
+  final IconData icono;
+  final bool seleccionado;
+  final VoidCallback onTap;
+
+  const _TarjetaMetodo({
+    required this.titulo,
+    required this.icono,
+    required this.seleccionado,
+    required this.onTap,
+  });
+
+  static const Color cafePrincipal = Color(0xFF4E342E);
+  static const Color cremaClaro = Color(0xFFFFFCF7);
+  static const Color dorado = Color(0xFFC8A45D);
+  static const Color textoOscuro = Color(0xFF3A2925);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: cremaClaro,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: seleccionado ? dorado : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icono, color: cafePrincipal, size: 28),
             const SizedBox(height: 6),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  hintText: 'Número telefónico empresa\n3052456845',
-                  hintStyle: const TextStyle(fontSize: 13, color: Colors.black45),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: Colors.black12),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: Colors.black12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
-                  ),
-                ),
-                style: const TextStyle(fontSize: 14),
+            Text(
+              titulo,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: textoOscuro,
+                fontSize: 13,
               ),
             ),
-
-            const Spacer(),
-
-            Center(
-              child: SizedBox(
-                width: 260,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _colorPrimario,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  child: const Text(
-                    'CONFIRMAR',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
           ],
         ),
       ),

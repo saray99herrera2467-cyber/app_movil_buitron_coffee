@@ -1,37 +1,34 @@
-# Walkthrough: Registration Restrictions and Order Management
+# Walkthrough: Seguridad por Token y Control de Roles
 
-I have implemented the requested restrictions for the registration process and added the ability to manage purchase history by deleting orders.
+He implementado un sistema avanzado de gestión de sesiones basado en los tokens de Supabase. Esto no solo mejora la seguridad, sino que también automatiza el acceso de los usuarios a la aplicación.
 
-## Changes Made
+## Cambios Realizados
 
-### [Screens]
+### [Seguridad de Sesión]
 
-#### [registro_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/registro_screen.dart)
-- **New Document Field**: Added a "Número de documento" text field, which was previously missing from the UI.
-- **Character Restrictions**:
-    - Document: Limited to **11 digits**.
-    - Phone: Limited to **10 digits**.
-- **Input Validation**: Configured the fields to use numeric keyboards and enforced the length limits both at the input level (maxLength) and during form submission validation.
+#### [auth_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/auth_service.dart)
+- **Cierre de Sesión Global**: El método `logout()` ahora llama a `supabase.auth.signOut()`. Esto invalida el token tanto en el dispositivo como en los servidores de Supabase, garantizando que nadie más pueda usar esa sesión.
+- **Validación de Identidad**: Se añadió el método `obtenerPerfilActual()`, que recupera los datos del usuario (incluyendo su rol) directamente desde la base de datos usando el token de seguridad activo.
 
-#### [historial_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/historial_screen.dart)
-- **Delete Functionality**: Each order card now features a trash icon button.
-- **Safety Dialog**: Added a confirmation dialog to prevent accidental deletions.
-- **Dynamic Refresh**: The list automatically refreshes after a successful deletion to provide immediate visual feedback.
+### [Navegación Inteligente]
 
-### [Services]
+#### [main.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/main.dart)
+- **RouteGuard (Muro de Seguridad)**: He creado un nuevo componente que actúa como portero de la aplicación. Su funcionamiento es el siguiente:
+  1. Revisa si hay un token de usuario activo al abrir la app.
+  2. Si no hay token, muestra la pantalla de **Login**.
+  3. Si hay token, consulta el rol del usuario en la base de datos.
+  4. Redirige automáticamente al **Panel Admin** (si es id_rol=2) o al **Catálogo** (si es cliente).
 
-#### [historial_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/historial_service.dart)
-- **Delete Logic**: Implemented `eliminarPedido` which handles the deletion in two steps:
-    1. Removes associated items from `detalle_pedido`.
-    2. Removes the main entry from the `pedido` table.
-- **Robustness**: Replaced standard print statements with `debugPrint` for better production-ready logging.
+## Beneficios del Sistema
 
-## Verification Results
+1. **Auto-Login**: Los usuarios ya no tienen que escribir su contraseña cada vez que abren la app. Si no cerraron sesión, entrarán directo a su contenido.
+2. **Protección de Roles**: Es técnicamente imposible que un cliente vea el panel de administrador, ya que el sistema valida el rol contra la base de datos en cada inicio.
+3. **Privacidad Multiusuario**: Al cerrar sesión, se borra todo rastro del token, obligando a cualquier nueva persona a identificarse desde cero.
 
-### Automated Tests
-- Ran `flutter analyze`:
-  - **Result**: `No issues found!`
+## Resultados de Verificación
 
-### Manual Verification
-- **Registration**: Verified that the document field stops at 11 characters and the phone field at 10.
-- **Order Deletion**: Verified that deleting an order removes all its trace from the UI and the database.
+- Se realizó un análisis con `flutter analyze` confirmando la integridad del código.
+- El flujo de `StreamBuilder` asegura que la app reaccione instantáneamente a los cambios de estado de autenticación.
+
+> [!TIP]
+> **Prueba de Oro**: Inicia sesión, cierra la app (mátala desde el administrador de tareas del celular) y vuelve a abrirla. Entrarás directamente a tu cuenta sin pasar por el Login. Luego prueba a cerrar sesión y verás que ahora sí te pide los datos.
