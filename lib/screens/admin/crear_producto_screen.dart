@@ -16,28 +16,17 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
   final _nombreCtrl = TextEditingController();
   final _descripcionCtrl = TextEditingController();
   final _precioCtrl = TextEditingController();
-  final _stockCtrl = TextEditingController(text: '0'); // 👈 NUEVO
   final _imagenCtrl = TextEditingController();
   final _categoriaCtrl = TextEditingController();
 
   bool _estado = true;
   bool _guardando = false;
 
-  // ==========================================================
-  // COLORES BUITRÓN COFFEE
-  // ==========================================================
-  static const Color cafePrincipal = Color(0xFF4E342E);
-  static const Color cafeClaro = Color(0xFF795548);
-  static const Color crema = Color(0xFFF5EFE6);
-  static const Color cremaClaro = Color(0xFFFFFCF7);
-  static const Color dorado = Color(0xFFC8A45D);
-
   @override
   void dispose() {
     _nombreCtrl.dispose();
     _descripcionCtrl.dispose();
     _precioCtrl.dispose();
-    _stockCtrl.dispose();
     _imagenCtrl.dispose();
     _categoriaCtrl.dispose();
     super.dispose();
@@ -48,39 +37,33 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
 
     setState(() => _guardando = true);
 
-    try {
-      final nuevoProducto = Producto(
-        id: 0, 
-        nombre: _nombreCtrl.text.trim(),
-        descripcion: _descripcionCtrl.text.trim().isEmpty ? null : _descripcionCtrl.text.trim(),
-        precio: double.parse(_precioCtrl.text.trim()),
-        stock: int.tryParse(_stockCtrl.text.trim()) ?? 0, 
-        imagen: _imagenCtrl.text.trim().isEmpty ? null : _imagenCtrl.text.trim(),
-        categoria: _categoriaCtrl.text.trim(),
-        estado: _estado,
-      );
+    final nuevoProducto = Producto(
+      id: 0, // Supabase asigna el id automáticamente
+      nombre: _nombreCtrl.text.trim(),
+      descripcion: _descripcionCtrl.text.trim().isEmpty
+          ? null
+          : _descripcionCtrl.text.trim(),
+      precio: double.parse(_precioCtrl.text.trim()),
+      imagen:
+      _imagenCtrl.text.trim().isEmpty ? null : _imagenCtrl.text.trim(),
+      categoria: _categoriaCtrl.text.trim(),
+      estado: _estado,
+    );
 
-      final provider = context.read<ProductoAdminProvider>();
-      final exito = await provider.crearProducto(nuevoProducto);
+    final provider = context.read<ProductoAdminProvider>();
+    final exito = await provider.crearProducto(nuevoProducto);
 
-      if (!mounted) return;
-      setState(() => _guardando = false);
+    if (!mounted) return;
+    setState(() => _guardando = false);
 
-      if (exito) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(backgroundColor: Colors.green, content: Text('Producto creado correctamente')),
-        );
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.red, content: Text(provider.error ?? 'Error al crear el producto')),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _guardando = false);
+    if (exito) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text('Error: $e')),
+        const SnackBar(content: Text('Producto creado correctamente')),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.error ?? 'Error al crear el producto')),
       );
     }
   }
@@ -88,130 +71,107 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: crema,
-      appBar: AppBar(
-        title: const Text('CREAR PRODUCTO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: cafePrincipal,
-        foregroundColor: Colors.white,
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Crear Producto')),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              const SizedBox(height: 10),
-              _campoTexto(controller: _nombreCtrl, label: 'Nombre del producto', icono: Icons.coffee),
-              const SizedBox(height: 16),
-              _campoTexto(controller: _descripcionCtrl, label: 'Descripción (opcional)', icono: Icons.description, maxLines: 3),
-              const SizedBox(height: 16),
-              _campoTexto(
-                controller: _precioCtrl, 
-                label: 'Precio', 
-                icono: Icons.attach_money,
-                tipo: const TextInputType.numberWithOptions(decimal: true),
-                prefix: '\$ ',
+              TextFormField(
+                controller: _nombreCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre del producto',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'El nombre es obligatorio'
+                    : null,
               ),
               const SizedBox(height: 16),
-              _campoTexto(
-                controller: _stockCtrl, 
-                label: 'Stock disponible', 
-                icono: Icons.inventory_2_outlined,
-                tipo: TextInputType.number,
+              TextFormField(
+                controller: _descripcionCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Descripción (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
               const SizedBox(height: 16),
-              _campoTexto(controller: _categoriaCtrl, label: 'Categoría (Grano / Molido)', icono: Icons.category),
-              const SizedBox(height: 16),
-              _campoTexto(
-                controller: _imagenCtrl, 
-                label: 'Nombre de imagen o URL', 
-                icono: Icons.image,
-                hint: 'Ej: cafe1.png o URL completa',
+              TextFormField(
+                controller: _precioCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Precio',
+                  border: OutlineInputBorder(),
+                  prefixText: '\$ ',
+                ),
+                keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'El precio es obligatorio';
+                  }
+                  final n = double.tryParse(value.trim());
+                  if (n == null || n <= 0) {
+                    return 'Ingresa un precio válido';
+                  }
+                  return null;
+                },
               ),
-              
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _categoriaCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Categoría',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'La categoría es obligatoria'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _imagenCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'URL de la imagen (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
               if (_imagenCtrl.text.trim().isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(top: 15),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: Image.network(
-                      _imagenCtrl.text.trim(),
-                      height: 150,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        height: 150,
-                        color: cremaClaro,
-                        child: const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.broken_image, color: cafeClaro, size: 40),
-                            Text('Vista previa no disponible', style: TextStyle(fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                    ),
+                  padding: const EdgeInsets.only(top: 12, bottom: 4),
+                  child: Image.network(
+                    _imagenCtrl.text.trim(),
+                    height: 120,
+                    errorBuilder: (_, __, ___) =>
+                    const Text('No se pudo cargar la imagen'),
                   ),
                 ),
-
               const SizedBox(height: 16),
               SwitchListTile(
-                title: const Text('Producto activo', style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal)),
+                title: const Text('Producto activo'),
                 value: _estado,
-                activeColor: dorado,
                 onChanged: (value) => setState(() => _estado = value),
               ),
-              
-              const SizedBox(height: 30),
-              SizedBox(
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _guardando ? null : _guardarProducto,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: cafePrincipal,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 3,
-                  ),
-                  child: _guardando
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('GUARDAR PRODUCTO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _guardando ? null : _guardarProducto,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
+                child: _guardando
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : const Text('Guardar Producto'),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _campoTexto({
-    required TextEditingController controller,
-    required String label,
-    required IconData icono,
-    int maxLines = 1,
-    TextInputType tipo = TextInputType.text,
-    String? prefix,
-    String? hint,
-  }) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: tipo,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixText: prefix,
-        prefixIcon: Icon(icono, color: dorado),
-        filled: true,
-        fillColor: cremaClaro,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: dorado, width: 2)),
-      ),
-      validator: (value) => (value == null || value.trim().isEmpty && label != 'Descripción (opcional)')
-          ? 'Este campo es obligatorio'
-          : null,
-      onChanged: label == 'Nombre de imagen o URL' ? (_) => setState(() {}) : null,
     );
   }
 }

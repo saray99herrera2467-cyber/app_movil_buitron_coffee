@@ -1,8 +1,13 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/producto.dart';
-import '../services/producto_service.dart';
 
 class ProductoAdminProvider extends ChangeNotifier {
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  // ⚠️ Verifica que este sea el nombre exacto de tu tabla en Supabase
+  static const String _tabla = 'productos';
+
   List<Producto> productos = [];
   bool cargando = false;
   String? error;
@@ -14,7 +19,11 @@ class ProductoAdminProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      productos = await ProductoService.obtenerTodos();
+      final data =
+      await _supabase.from(_tabla).select().order('id', ascending: true);
+
+      productos =
+          (data as List).map((json) => Producto.fromJson(json)).toList();
     } catch (e) {
       error = 'Error al cargar productos: $e';
     } finally {
@@ -26,7 +35,7 @@ class ProductoAdminProvider extends ChangeNotifier {
   // ✅ CREAR PRODUCTO
   Future<bool> crearProducto(Producto producto) async {
     try {
-      await ProductoService.crearProducto(producto);
+      await _supabase.from(_tabla).insert(producto.toJson());
       await cargarProductos();
       return true;
     } catch (e) {
@@ -39,7 +48,10 @@ class ProductoAdminProvider extends ChangeNotifier {
   // ✅ ACTUALIZAR PRODUCTO
   Future<bool> actualizarProducto(Producto producto) async {
     try {
-      await ProductoService.actualizarProducto(producto);
+      await _supabase
+          .from(_tabla)
+          .update(producto.toJson())
+          .eq('id', producto.id);
       await cargarProductos();
       return true;
     } catch (e) {
@@ -52,7 +64,7 @@ class ProductoAdminProvider extends ChangeNotifier {
   // ✅ ELIMINAR PRODUCTO
   Future<bool> eliminarProducto(int id) async {
     try {
-      await ProductoService.eliminarProducto(id);
+      await _supabase.from(_tabla).delete().eq('id', id);
       productos.removeWhere((p) => p.id == id);
       notifyListeners();
       return true;
@@ -63,7 +75,7 @@ class ProductoAdminProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ ACTIVAR / DESACTIVAR RÁPIDO
+  // ✅ ACTIVAR / DESACTIVAR RÁPIDO (sin eliminar)
   Future<bool> cambiarEstado(Producto producto) async {
     final actualizado = producto.copyWith(estado: !producto.estado);
     return await actualizarProducto(actualizado);
