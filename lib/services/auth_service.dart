@@ -60,9 +60,6 @@ class AuthService {
 
       // -------------------------------------------------------
       // Crear usuario en Supabase Auth
-      //
-      // Esto utiliza la plantilla:
-      // Authentication > Email Templates > Confirm signup
       // -------------------------------------------------------
 
       final AuthResponse authRes =
@@ -99,8 +96,6 @@ class AuthService {
         'direccion': direccion ?? '',
         'clave': _hashClave(clave),
         'id_rol': 1,
-
-        // Se activa después de verificar el código.
         'estado': false,
       })
           .select()
@@ -115,7 +110,6 @@ class AuthService {
           'El correo o documento ya está registrado.',
         );
       }
-
       throw Exception(
         'Error en la base de datos: ${e.message}',
       );
@@ -128,21 +122,6 @@ class AuthService {
 
   // =========================================================
   // RECUPERAR CONTRASEÑA
-  // =========================================================
-  //
-  // IMPORTANTE:
-  // NO usamos auth.resend() aquí.
-  //
-  // resetPasswordForEmail() es el método correcto para
-  // solicitar nuevamente el correo de recuperación.
-  //
-  // Supabase utilizará:
-  // Authentication > Email Templates > Reset password
-  //
-  // Esa plantilla debe contener:
-  //
-  // {{ .Token }}
-  //
   // =========================================================
 
   static Future<void> recuperarClave(String email) async {
@@ -163,11 +142,9 @@ class AuthService {
 
       if (mensaje.contains('rate limit') ||
           mensaje.contains('60 seconds') ||
-          mensaje.contains('after 60') ||
           mensaje.contains('too many')) {
         throw Exception(
-          'Debes esperar 60 segundos antes de solicitar '
-              'otro código.',
+          'Debes esperar 60 segundos antes de solicitar otro código.',
         );
       }
 
@@ -184,12 +161,6 @@ class AuthService {
   // =========================================================
   // ACTUALIZAR CONTRASEÑA
   // =========================================================
-  //
-  // Este método se ejecuta DESPUÉS de verificar el código
-  // de recuperación.
-  //
-  // verifyOTP con OtpType.recovery establece la sesión.
-  // =========================================================
 
   static Future<void> actualizarClave(
       String nuevaClave,
@@ -201,22 +172,13 @@ class AuthService {
     }
 
     try {
-      // -------------------------------------------------------
-      // Comprobar sesión de recuperación
-      // -------------------------------------------------------
-
       final session = _supabase.auth.currentSession;
 
       if (session == null) {
         throw Exception(
-          'La sesión de recuperación no está activa. '
-              'Solicita nuevamente el código.',
+          'La sesión de recuperación no está activa. Solicita nuevamente el código.',
         );
       }
-
-      // -------------------------------------------------------
-      // Actualizar contraseña en Supabase Auth
-      // -------------------------------------------------------
 
       final respuesta = await _supabase.auth.updateUser(
         UserAttributes(
@@ -229,11 +191,6 @@ class AuthService {
           'No se pudo actualizar la contraseña.',
         );
       }
-
-      // -------------------------------------------------------
-      // Actualizar también la contraseña de nuestra tabla
-      // usuario
-      // -------------------------------------------------------
 
       final correo =
           _supabase.auth.currentUser?.email;
@@ -255,8 +212,7 @@ class AuthService {
       );
     } on PostgrestException catch (e) {
       throw Exception(
-        'La contraseña de la tabla no pudo actualizarse: '
-            '${e.message}',
+        'La contraseña de la tabla no pudo actualizarse: ${e.message}',
       );
     } catch (e) {
       throw Exception(
@@ -268,14 +224,6 @@ class AuthService {
   // =========================================================
   // VERIFICAR CÓDIGO OTP
   // =========================================================
-  //
-  // REGISTRO:
-  // OtpType.email
-  //
-  // RECUPERACIÓN:
-  // OtpType.recovery
-  //
-  // =========================================================
 
   static Future<void> verificarCodigo(
       String email,
@@ -285,27 +233,13 @@ class AuthService {
     final correo = email.trim().toLowerCase();
     final codigo = token.trim();
 
-    // -------------------------------------------------------
-    // Validar código
-    // -------------------------------------------------------
-
     if (codigo.length != 6) {
       throw Exception(
         'El código debe tener 6 dígitos.',
       );
     }
 
-    if (!RegExp(r'^\d{6}$').hasMatch(codigo)) {
-      throw Exception(
-        'El código solo puede contener números.',
-      );
-    }
-
     try {
-      // -----------------------------------------------------
-      // Verificar OTP
-      // -----------------------------------------------------
-
       final AuthResponse respuesta =
       await _supabase.auth.verifyOTP(
         email: correo,
@@ -315,24 +249,11 @@ class AuthService {
             : OtpType.email,
       );
 
-      // -----------------------------------------------------
-      // Comprobar usuario
-      // -----------------------------------------------------
-
       if (respuesta.user == null) {
         throw Exception(
           'No se pudo verificar el código.',
         );
       }
-
-      // -----------------------------------------------------
-      // REGISTRO
-      // -----------------------------------------------------
-      //
-      // Solo en registro cambiamos estado a true.
-      //
-      // En recuperación NO modificamos estado.
-      // -----------------------------------------------------
 
       if (!esRecuperacion) {
         await _supabase
@@ -345,24 +266,14 @@ class AuthService {
           correo,
         );
       }
-
-      // -----------------------------------------------------
-      // RECUPERACIÓN
-      // -----------------------------------------------------
-      //
-      // verifyOTP con OtpType.recovery establece la sesión
-      // que posteriormente utilizará actualizarClave().
-      // -----------------------------------------------------
     } on AuthException catch (e) {
       final mensaje = e.message.toLowerCase();
 
       if (mensaje.contains('expired') ||
           mensaje.contains('invalid') ||
-          mensaje.contains('otp_expired') ||
-          mensaje.contains('token has expired')) {
+          mensaje.contains('otp_expired')) {
         throw Exception(
-          'El código es inválido o ya expiró. '
-              'Solicita un código nuevo.',
+          'El código es inválido o ya expiró. Solicita un código nuevo.',
         );
       }
 
@@ -379,14 +290,6 @@ class AuthService {
   // =========================================================
   // REENVIAR CÓDIGO
   // =========================================================
-  //
-  // REGISTRO:
-  // auth.resend(OtpType.email)
-  //
-  // RECUPERACIÓN:
-  // resetPasswordForEmail()
-  //
-  // =========================================================
 
   static Future<void> reenviarCodigo(
       String email, {
@@ -401,39 +304,17 @@ class AuthService {
     }
 
     try {
-      // -------------------------------------------------------
-      // RECUPERACIÓN
-      // -------------------------------------------------------
-
       if (esRecuperacion) {
         await _supabase.auth.resetPasswordForEmail(
           correo,
         );
-      }
-
-      // -------------------------------------------------------
-      // REGISTRO
-      // -------------------------------------------------------
-
-      else {
+      } else {
         await _supabase.auth.resend(
           type: OtpType.email,
           email: correo,
         );
       }
     } on AuthException catch (e) {
-      final mensaje = e.message.toLowerCase();
-
-      if (mensaje.contains('60 seconds') ||
-          mensaje.contains('rate limit') ||
-          mensaje.contains('too many') ||
-          mensaje.contains('after 60')) {
-        throw Exception(
-          'Por favor espera 60 segundos antes '
-              'de solicitar otro código.',
-        );
-      }
-
       throw Exception(
         'Error al reenviar: ${e.message}',
       );
@@ -454,10 +335,6 @@ class AuthService {
   }) async {
     final correoNormalizado =
     correo.trim().toLowerCase();
-
-    // -------------------------------------------------------
-    // Intentar iniciar sesión mediante Supabase Auth
-    // -------------------------------------------------------
 
     try {
       final AuthResponse authRes =
@@ -481,8 +358,32 @@ class AuthService {
             correoNormalizado,
             respuesta['id_rol'] ?? 1,
           );
-
           return respuesta;
+        } else {
+          // ✅ AUTO-APROVISIONAMIENTO (Para usuarios Web)
+          final userMetadata = authRes.user!.userMetadata ?? {};
+          
+          final nuevoPerfil = await _supabase
+              .from(ApiService.tablaUsuarios)
+              .insert({
+                'nombre_usuario': userMetadata['nombre_usuario'] ?? userMetadata['full_name'] ?? correoNormalizado.split('@')[0],
+                'apellido': userMetadata['apellido'] ?? '',
+                'correo': correoNormalizado,
+                'documento': userMetadata['documento'] ?? '',
+                'telefono': userMetadata['telefono'] ?? '',
+                'direccion': userMetadata['direccion'] ?? '',
+                'clave': _hashClave(clave),
+                'id_rol': 1,
+                'estado': true,
+              })
+              .select()
+              .single();
+
+          await _guardarSesionLocal(
+            correoNormalizado,
+            nuevoPerfil['id_rol'] ?? 1,
+          );
+          return nuevoPerfil;
         }
       }
     } catch (e) {
@@ -491,10 +392,6 @@ class AuthService {
       );
     }
 
-    // -------------------------------------------------------
-    // MODO RESCATE
-    // -------------------------------------------------------
-
     try {
       final claveHasheada =
       _hashClave(clave);
@@ -502,18 +399,9 @@ class AuthService {
       final respuesta = await _supabase
           .from(ApiService.tablaUsuarios)
           .select()
-          .eq(
-        'correo',
-        correoNormalizado,
-      )
-          .eq(
-        'clave',
-        claveHasheada,
-      )
-          .eq(
-        'estado',
-        true,
-      )
+          .eq('correo', correoNormalizado)
+          .eq('clave', claveHasheada)
+          .eq('estado', true)
           .maybeSingle();
 
       if (respuesta != null) {
@@ -521,7 +409,6 @@ class AuthService {
           correoNormalizado,
           respuesta['id_rol'] ?? 1,
         );
-
         return respuesta;
       }
     } catch (e) {
@@ -579,13 +466,12 @@ class AuthService {
   }
 
   // =========================================================
-  // OBTENER PERFIL ACTUAL
+  // OBTENER PERFIL ACTUAL (Con Auto-Aprovisionamiento)
   // =========================================================
 
   static Future<Map<String, dynamic>?>
   obtenerPerfilActual() async {
-    final user =
-        _supabase.auth.currentUser;
+    final user = _supabase.auth.currentUser;
 
     if (user == null || user.email == null) {
       return null;
@@ -595,18 +481,39 @@ class AuthService {
       final respuesta = await _supabase
           .from(ApiService.tablaUsuarios)
           .select()
-          .eq(
-        'correo',
-        user.email!,
-      )
+          .eq('correo', user.email!)
           .maybeSingle();
 
-      return respuesta;
+      if (respuesta != null) {
+        return respuesta;
+      }
+
+      // ✅ AUTO-APROVISIONAMIENTO (Para usuarios Web con sesión activa)
+      final userMetadata = user.userMetadata ?? {};
+      final correoNormalizado = user.email!.toLowerCase();
+
+      final nuevoPerfil = await _supabase
+          .from(ApiService.tablaUsuarios)
+          .insert({
+        'nombre_usuario': userMetadata['nombre_usuario'] ??
+            userMetadata['full_name'] ??
+            correoNormalizado.split('@')[0],
+        'apellido': userMetadata['apellido'] ?? '',
+        'correo': correoNormalizado,
+        'documento': userMetadata['documento'] ?? '',
+        'telefono': userMetadata['telefono'] ?? '',
+        'direccion': userMetadata['direccion'] ?? '',
+        'id_rol': 1,
+        'estado': true,
+      })
+          .select()
+          .single();
+
+      return nuevoPerfil;
     } catch (e) {
       debugPrint(
-        'Error al obtener perfil por token: $e',
+        'Error al obtener/crear perfil por token: $e',
       );
-
       return null;
     }
   }
@@ -621,15 +528,9 @@ class AuthService {
       return await _supabase
           .from(ApiService.tablaUsuarios)
           .select()
-          .order(
-        'id',
-        ascending: true,
-      );
+          .order('id', ascending: true);
     } catch (e) {
-      debugPrint(
-        'Error obteniendo usuarios: $e',
-      );
-
+      debugPrint('Error obteniendo usuarios: $e');
       rethrow;
     }
   }
@@ -653,8 +554,7 @@ class AuthService {
   // =========================================================
 
   static Future<int?> obtenerIdSesion() async {
-    final correo =
-    await obtenerCorreoSesion();
+    final correo = await obtenerCorreoSesion();
 
     if (correo == null) {
       return null;
@@ -664,10 +564,7 @@ class AuthService {
       final res = await _supabase
           .from(ApiService.tablaUsuarios)
           .select('id')
-          .eq(
-        'correo',
-        correo,
-      )
+          .eq('correo', correo)
           .maybeSingle();
 
       return res?['id'] as int?;
@@ -687,10 +584,7 @@ class AuthService {
     final respuesta = await _supabase
         .from(ApiService.tablaUsuarios)
         .select()
-        .eq(
-      'id',
-      usuarioId,
-    )
+        .eq('id', usuarioId)
         .single();
 
     return respuesta;

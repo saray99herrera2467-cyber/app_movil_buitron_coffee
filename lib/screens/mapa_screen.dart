@@ -13,16 +13,16 @@ class MapaScreen extends StatefulWidget {
 
 class _MapaScreenState extends State<MapaScreen> {
   // ============================================================
-  // PALETA DE COLORES BUITRÓN COFFEE
+  // PALETA DE COLORES BUITRÓN COFFEE (NARANJA CÁLIDO)
   // ============================================================
 
-  static const Color cafePrincipal = Color(0xFF4E342E);
-  static const Color cafeClaro = Color(0xFF795548);
-  static const Color crema = Color(0xFFF5EFE6);
-  static const Color cremaClaro = Color(0xFFFFFCF7);
-  static const Color dorado = Color(0xFFC8A45D);
-  static const Color textoOscuro = Color(0xFF3A2925);
-  static const Color textoSuave = Color(0xFF756860);
+  static const Color cafePrincipal = Color(0xFFF9A15E);
+  static const Color cafeClaro = Color(0xFFFF7043);
+  static const Color crema = Color(0xFFFFFBF2);
+  static const Color cremaClaro = Color(0xFFFFFFFF);
+  static const Color dorado = Color(0xFFFFAB40);
+  static const Color textoOscuro = Color(0xFF2D2D2D);
+  static const Color textoSuave = Color(0xFF7D6E66);
 
   // ============================================================
   // UBICACIÓN DE LA EMPRESA

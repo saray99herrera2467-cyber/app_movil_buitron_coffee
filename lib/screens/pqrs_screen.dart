@@ -8,14 +8,14 @@ import '../services/perfil_service.dart';
 // PALETA DE COLORES
 // ============================================================
 
-const Color kFondoApp = Color(0xFFF5EFE6);
-const Color kCafePrincipal = Color(0xFF4E342E);
-const Color kCafeClaro = Color(0xFF795548);
-const Color kDorado = Color(0xFFC8A45D);
-const Color kCrema = Color(0xFFFFFCF7);
-const Color kInput = Color(0xFFEDE5D9);
-const Color kTextoOscuro = Color(0xFF3A2925);
-const Color kTextoSuave = Color(0xFF756860);
+const Color kFondoApp = Color(0xFFFFFBF2);
+const Color kCafePrincipal = Color(0xFFF9A15E);
+const Color kCafeClaro = Color(0xFFFF7043);
+const Color kDorado = Color(0xFFFFAB40);
+const Color kCrema = Color(0xFFFFFFFF);
+const Color kInput = Color(0xFFF3E5D8);
+const Color kTextoOscuro = Color(0xFF2D2D2D);
+const Color kTextoSuave = Color(0xFF7D6E66);
 
 // ============================================================
 // MODELO PQRS

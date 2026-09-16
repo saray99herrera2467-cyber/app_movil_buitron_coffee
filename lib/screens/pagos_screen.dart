@@ -76,12 +76,13 @@ class _PagosScreenState extends State<PagosScreen> {
     }
   }
 
-  static const Color cafePrincipal = Color(0xFF4E342E);
-  static const Color crema = Color(0xFFF5EFE6);
-  static const Color cremaClaro = Color(0xFFFFFCF7);
-  static const Color dorado = Color(0xFFC8A45D);
-  static const Color textoOscuro = Color(0xFF3A2925);
-  static const Color textoSuave = Color(0xFF756860);
+  // ✅ PALETA NARANJA CÁLIDO
+  static const Color cafePrincipal = Color(0xFFF9A15E);
+  static const Color crema = Color(0xFFFFFBF2);
+  static const Color cremaClaro = Color(0xFFFFFFFF);
+  static const Color dorado = Color(0xFFFFAB40);
+  static const Color textoOscuro = Color(0xFF2D2D2D);
+  static const Color textoSuave = Color(0xFF7D6E66);
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +172,7 @@ class _PagosScreenState extends State<PagosScreen> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: dorado,
+                    color: Color(0xFFFF7043),
                   ),
                 ),
               ),
@@ -183,6 +184,7 @@ class _PagosScreenState extends State<PagosScreen> {
                 decoration: BoxDecoration(
                   color: cremaClaro,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Row(
                   children: [
@@ -201,20 +203,29 @@ class _PagosScreenState extends State<PagosScreen> {
               const Spacer(),
 
               Center(
-                child: SizedBox(
-                  width: 260,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _confirmar,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: cafePrincipal,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                child: InkWell(
+                  onTap: _confirmar,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 260,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF9A15E), Color(0xFFFF7043)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF9A15E).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
                     ),
+                    alignment: Alignment.center,
                     child: Text(
                       _textoBoton,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                   ),
                 ),
@@ -242,10 +253,10 @@ class _TarjetaMetodo extends StatelessWidget {
     required this.onTap,
   });
 
-  static const Color cafePrincipal = Color(0xFF4E342E);
-  static const Color cremaClaro = Color(0xFFFFFCF7);
-  static const Color dorado = Color(0xFFC8A45D);
-  static const Color textoOscuro = Color(0xFF3A2925);
+  static const Color cafePrincipal = Color(0xFFF9A15E);
+  static const Color cremaClaro = Color(0xFFFFFFFF);
+  static const Color dorado = Color(0xFFFFAB40);
+  static const Color textoOscuro = Color(0xFF2D2D2D);
 
   @override
   Widget build(BuildContext context) {
@@ -257,12 +268,12 @@ class _TarjetaMetodo extends StatelessWidget {
           color: cremaClaro,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: seleccionado ? dorado : Colors.transparent,
+            color: seleccionado ? const Color(0xFFFF7043) : Colors.grey.shade200,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -270,14 +281,14 @@ class _TarjetaMetodo extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icono, color: cafePrincipal, size: 28),
+            Icon(icono, color: seleccionado ? const Color(0xFFFF7043) : cafePrincipal, size: 28),
             const SizedBox(height: 6),
             Text(
               titulo,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: textoOscuro,
+                color: seleccionado ? const Color(0xFFFF7043) : textoOscuro,
                 fontSize: 13,
               ),
             ),

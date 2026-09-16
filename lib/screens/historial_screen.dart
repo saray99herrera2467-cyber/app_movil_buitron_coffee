@@ -8,13 +8,13 @@ import 'comprobante_pago_screen.dart';
 // COLORES BUITRÓN COFFEE
 // ============================================================
 
-const Color cafePrincipal = Color(0xFF4E342E);
-const Color cafeClaro = Color(0xFF795548);
-const Color crema = Color(0xFFF5EFE6);
-const Color cremaClaro = Color(0xFFFFFCF7);
-const Color dorado = Color(0xFFC8A45D);
-const Color textoOscuro = Color(0xFF3A2925);
-const Color textoSuave = Color(0xFF756860);
+const Color cafePrincipal = Color(0xFFF9A15E);
+const Color cafeClaro = Color(0xFFFF7043);
+const Color crema = Color(0xFFFFFBF2);
+const Color cremaClaro = Color(0xFFFFFFFF);
+const Color dorado = Color(0xFFFFAB40);
+const Color textoOscuro = Color(0xFF2D2D2D);
+const Color textoSuave = Color(0xFF7D6E66);
 
 // ============================================================
 // HISTORIAL SCREEN

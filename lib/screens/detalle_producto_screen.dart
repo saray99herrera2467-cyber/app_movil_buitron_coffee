@@ -18,11 +18,11 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
   List<ResenaModel> _resenas = [];
   bool _cargandoResenas = true;
 
-  static const Color cafePrincipal = Color(0xFF4E342E);
-  static const Color crema = Color(0xFFF5EFE6);
-  static const Color dorado = Color(0xFFC8A45D);
-  static const Color textoOscuro = Color(0xFF3A2925);
-  static const Color textoSuave = Color(0xFF756860);
+  static const Color cafePrincipal = Color(0xFFF9A15E);
+  static const Color crema = Color(0xFFFFFBF2);
+  static const Color dorado = Color(0xFFFFAB40);
+  static const Color textoOscuro = Color(0xFF2D2D2D);
+  static const Color textoSuave = Color(0xFF7D6E66);
 
   @override
   void initState() {
@@ -56,7 +56,10 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
             pinned: true,
             backgroundColor: cafePrincipal,
             flexibleSpace: FlexibleSpaceBar(
-              background: _mostrarImagen(widget.producto),
+              background: Hero(
+                tag: 'prod_${widget.producto.id}',
+                child: _mostrarImagen(widget.producto),
+              ),
             ),
           ),
 
@@ -158,34 +161,54 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
         ],
       ),
       bottomSheet: Container(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120), // ✅ Elevamos aún más los botones (120px)
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
         decoration: const BoxDecoration(
           color: Colors.white,
           boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
         ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              final error = await context.read<CarritoProvider>().agregarProducto(widget.producto);
-              if (error != null) {
-                messenger.showSnackBar(
-                  SnackBar(backgroundColor: Colors.redAccent, content: Text(error)),
-                );
-              } else {
-                messenger.showSnackBar(
-                  SnackBar(content: Text('${widget.producto.nombre} agregado')),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: cafePrincipal,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          onTap: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final error = await context.read<CarritoProvider>().agregarProducto(widget.producto);
+            if (error != null) {
+              messenger.showSnackBar(
+                SnackBar(backgroundColor: Colors.redAccent, content: Text(error)),
+              );
+            } else {
+              messenger.showSnackBar(
+                SnackBar(content: Text('${widget.producto.nombre} agregado')),
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(15),
+          child: Container(
+            width: double.infinity,
+            height: 55,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF9A15E), Color(0xFFFF7043)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFF9A15E).withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
             ),
-            child: const Text('AGREGAR AL CARRITO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            alignment: Alignment.center,
+            child: const Text(
+              'AGREGAR AL CARRITO',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                letterSpacing: 1,
+              ),
+            ),
           ),
         ),
       ),

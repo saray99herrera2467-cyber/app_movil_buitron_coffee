@@ -4,10 +4,10 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../services/pse_service.dart';
 import '../services/pedido_service.dart';
 
-const Color cafePrincipal = Color(0xFF4E342E);
-const Color crema = Color(0xFFF5EFE6);
-const Color cremaClaro = Color(0xFFFFFCF7);
-const Color dorado = Color(0xFFC8A45D);
+const Color cafePrincipal = Color(0xFFF9A15E);
+const Color crema = Color(0xFFFFFBF2);
+const Color cremaClaro = Color(0xFFFFFFFF);
+const Color dorado = Color(0xFFFFAB40);
 
 class PseDatosScreen extends StatefulWidget {
   final double total;
@@ -61,7 +61,6 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
     setState(() => _procesando = true);
 
     try {
-      // 1. Crear el pedido en Supabase
       final pedido = await PedidoService.crearPedido(
         correo: widget.correo,
         nombreCompleto: widget.nombreCompleto,
@@ -78,9 +77,8 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
         items: widget.items,
       );
 
-      if (pedido == null) throw Exception('No se pudo crear el pedido en la base de datos');
+      if (pedido == null) throw Exception('No se pudo crear el pedido');
 
-      // 2. Iniciar pago en ePayco
       final resultado = await PseService.crearPagoPse(
         banco: _bancoSeleccionado!,
         tipoDocumento: _tipoDocumento,
@@ -95,25 +93,19 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
       );
 
       final urlBanco = resultado['data']?['urlbanco'] ?? resultado['urlbanco'];
-
-      if (urlBanco == null) {
-        throw Exception('ePayco no devolvió la URL del banco: $resultado');
-      }
+      if (urlBanco == null) throw Exception('ePayco no devolvió la URL del banco');
 
       if (!mounted) return;
 
-      // 3. Abrir pasarela en WebView
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => _PseWebView(url: urlBanco),
-        ),
+        MaterialPageRoute(builder: (_) => _PseWebView(url: urlBanco)),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error al procesar: ${e.toString().replaceFirst('Exception: ', '')}'),
+            content: Text('❌ Error al procesar: ${e.toString()}'),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -142,7 +134,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
           backgroundColor: cafePrincipal,
           centerTitle: true,
           title: const Text('DATOS DE PAGO',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
           leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context)),
@@ -154,7 +146,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Selecciona tu banco',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal, fontSize: 16)),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D), fontSize: 16)),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _bancoSeleccionado,
@@ -162,7 +154,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
                     filled: true,
                     fillColor: cremaClaro,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
                   ),
                   items: bancos
                       .map((b) => DropdownMenuItem(value: b.codigo, child: Text(b.nombre)))
@@ -172,7 +164,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
                 const SizedBox(height: 24),
 
                 const Text('Tipo de persona',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal, fontSize: 16)),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D), fontSize: 16)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -182,7 +174,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
                         groupValue: _tipoPersona,
                         title: const Text('Natural', style: TextStyle(fontSize: 14)),
                         onChanged: (v) => setState(() => _tipoPersona = v!),
-                        activeColor: cafePrincipal,
+                        activeColor: const Color(0xFFFF7043),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
@@ -192,7 +184,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
                         groupValue: _tipoPersona,
                         title: const Text('Jurídica', style: TextStyle(fontSize: 14)),
                         onChanged: (v) => setState(() => _tipoPersona = v!),
-                        activeColor: cafePrincipal,
+                        activeColor: const Color(0xFFFF7043),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
@@ -201,7 +193,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
                 const SizedBox(height: 16),
 
                 const Text('Identificación',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal, fontSize: 16)),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D), fontSize: 16)),
                 const SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,7 +206,7 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
                           filled: true,
                           fillColor: cremaClaro,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
                         ),
                         items: const [
                           DropdownMenuItem(value: 'CC', child: Text('CC')),
@@ -235,10 +227,10 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
                           filled: true,
                           fillColor: cremaClaro,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: dorado, width: 2),
+                            borderSide: const BorderSide(color: Color(0xFFFF7043), width: 2),
                           ),
                         ),
                       ),
@@ -248,25 +240,30 @@ class _PseDatosScreenState extends State<PseDatosScreen> {
 
                 const SizedBox(height: 40),
 
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _procesando ? null : _pagarConPse,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: cafePrincipal,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                InkWell(
+                  onTap: _procesando ? null : _pagarConPse,
+                  borderRadius: BorderRadius.circular(15),
+                  child: Container(
+                    width: double.infinity,
+                    height: 55,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF9A15E), Color(0xFFFF7043)],
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF9A15E).withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
                     ),
+                    alignment: Alignment.center,
                     child: _procesando
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
+                        ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                         : Text('PAGAR \$${widget.total.toStringAsFixed(0)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -309,7 +306,7 @@ class _PseWebViewState extends State<_PseWebView> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: cafePrincipal,
-        title: const Text('Confirmación bancaria', style: TextStyle(color: Colors.white)),
+        title: const Text('Confirmación bancaria', style: TextStyle(color: Colors.white, fontSize: 16)),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),

@@ -18,16 +18,16 @@ import 'pqrs_screen.dart';
 import 'detalle_producto_screen.dart';
 
 // ============================================================
-// COLORES BUITRÓN COFFEE
+// COLORES BUITRÓN COFFEE (NUEVA PALETA NARANJA CÁLIDO)
 // ============================================================
 
-const Color cafePrincipal = Color(0xFF4E342E);
-const Color cafeClaro = Color(0xFF795548);
-const Color crema = Color(0xFFF5EFE6);
-const Color cremaClaro = Color(0xFFFFFCF7);
-const Color dorado = Color(0xFFC8A45D);
-const Color textoOscuro = Color(0xFF3A2925);
-const Color textoSuave = Color(0xFF756860);
+const Color cafePrincipal = Color(0xFFF9A15E); // Naranja Suave Principal
+const Color cafeClaro = Color(0xFFFF8C00);     // Naranja Intenso
+const Color crema = Color(0xFFFFFBF2);         // Fondo Crema Muy Suave
+const Color cremaClaro = Color(0xFFFFFFFF);    // Blanco para tarjetas
+const Color dorado = Color(0xFFFFAB40);        // Acento Ámbar
+const Color textoOscuro = Color(0xFF2D2D2D);   // Casi Negro
+const Color textoSuave = Color(0xFF7D6E66);   // Marrón Grisáceo Suave
 
 // ============================================================
 // CATÁLOGO
@@ -365,12 +365,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
-          backgroundColor: Colors.redAccent,
+          backgroundColor: const Color(0xFF1A1A1A), // ✅ Fondo oscuro
           content: Text(
             error,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: 3),
         ),
       );
       return;
@@ -380,22 +380,23 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
     messenger.showSnackBar(
       SnackBar(
-        backgroundColor: cafePrincipal,
+        backgroundColor: const Color(0xFF1A1A1A), // ✅ Fondo oscuro premium
 
         content: Text(
           '${producto.nombre} agregado al carrito',
           style: const TextStyle(
             color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
 
         duration: const Duration(
-          seconds: 2,
+          seconds: 4, // ✅ Más tiempo para leer
         ),
 
         action: SnackBarAction(
           label: 'VER',
-          textColor: dorado,
+          textColor: cafePrincipal, // ✅ Resaltado con el color principal
 
           onPressed: () {
             Navigator.push(
@@ -756,167 +757,94 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
       appBar: AppBar(
         backgroundColor: cafePrincipal,
-
         foregroundColor: Colors.white,
-
         elevation: 0,
-
         centerTitle: true,
-
         title: const Text(
           'CATÁLOGO',
-
           style: TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
           ),
         ),
-
         actions: [
           Consumer<CarritoProvider>(
-            builder: (
-                context,
-                carrito,
-                child,
-                ) {
-              return Stack(
-                clipBehavior: Clip.none,
-
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.shopping_cart_outlined,
-                      size: 27,
-                      color: Colors.white,
+            builder: (context, carrito, child) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.shopping_cart_rounded, size: 28),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CarritoScreen()),
+                        );
+                      },
                     ),
-
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                          const CarritoScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // =================================================
-                  // CONTADOR
-                  // =================================================
-
-                  if (carrito.cantidadTotal > 0)
-                    Positioned(
-                      right: 2,
-                      top: 3,
-
-                      child: Container(
-                        padding:
-                        const EdgeInsets.all(5),
-
-                        decoration:
-                        const BoxDecoration(
-                          color: dorado,
-                          shape: BoxShape.circle,
-                        ),
-
-                        child: Text(
-                          '${carrito.cantidadTotal}',
-
-                          style:
-                          const TextStyle(
-                            color: textoOscuro,
-                            fontSize: 10,
-                            fontWeight:
-                            FontWeight.bold,
+                    if (carrito.cantidadTotal > 0)
+                      Positioned(
+                        right: 8,
+                        top: 10,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFF7043),
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          child: Text(
+                            '${carrito.cantidadTotal}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               );
             },
           ),
         ],
       ),
-
-      // ======================================================
-      // BODY
-      // ======================================================
-
       body: Column(
         children: [
           // ====================================================
-          // BUSCADOR
+          // BUSCADOR (Rediseño Referencia)
           // ====================================================
-
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              14,
-              15,
-              14,
-              8,
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            decoration: const BoxDecoration(
+              color: cafePrincipal,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
             ),
-
             child: TextField(
               controller: _buscarController,
-
               onChanged: _onBuscar,
-
               decoration: InputDecoration(
                 hintText: 'Buscar café...',
-
-                hintStyle: const TextStyle(
-                  color: textoSuave,
-                ),
-
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: cafePrincipal,
-                ),
-
-                suffixIcon:
-                _buscarController.text.isNotEmpty
-                    ? IconButton(
-                  icon: const Icon(
-                    Icons.clear,
-                    color: cafePrincipal,
-                  ),
-
-                  onPressed: () {
-                    _buscarController
-                        .clear();
-
-                    _filtrarProductos();
-
-                    setState(() {});
-                  },
-                )
-                    : null,
-
+                hintStyle: const TextStyle(color: Colors.grey, fontSize: 15),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFFF9A15E)),
                 filled: true,
-
-                fillColor: cremaClaro,
-
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 border: OutlineInputBorder(
-                  borderRadius:
-                  BorderRadius.circular(14),
-
+                  borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide.none,
                 ),
-
-                focusedBorder:
-                OutlineInputBorder(
-                  borderRadius:
-                  BorderRadius.circular(14),
-
-                  borderSide:
-                  const BorderSide(
-                    color: cafePrincipal,
-                    width: 1.5,
-                  ),
-                ),
+                suffixIcon: _buscarController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () {
+                          _buscarController.clear();
+                          _filtrarProductos();
+                          setState(() {});
+                        },
+                      )
+                    : null,
               ),
             ),
           ),
@@ -1060,13 +988,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 crossAxisCount: 2,
 
                 crossAxisSpacing:
-                12,
+                16,
 
                 mainAxisSpacing:
-                14,
+                18,
 
                 childAspectRatio:
-                0.75,
+                0.62,
               ),
 
               itemCount:
@@ -1124,42 +1052,53 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       ) {
     return Padding(
       padding: const EdgeInsets.only(
-        right: 8,
-        top: 5,
-        bottom: 5,
+        right: 12,
+        top: 8,
+        bottom: 8,
       ),
 
-      child: ChoiceChip(
-        label: Text(nombre),
-
-        selected: seleccionado,
-
-        selectedColor: cafePrincipal,
-
-        backgroundColor: cremaClaro,
-
-        side: BorderSide(
-          color: seleccionado
-              ? cafePrincipal
-              : cafeClaro,
-        ),
-
-        labelStyle: TextStyle(
-          color: seleccionado
-              ? Colors.white
-              : textoOscuro,
-
-          fontWeight: FontWeight.w600,
-        ),
-
-        onSelected: (_) {
-          setState(() {
-            _categoriaSeleccionada =
-                nombre;
-          });
-
+      child: InkWell(
+        onTap: () {
+          setState(() { _categoriaSeleccionada = nombre; });
           _filtrarProductos();
         },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: seleccionado ? null : Colors.white,
+            gradient: seleccionado ? const LinearGradient(
+              colors: [Color(0xFFF9A15E), Color(0xFFFF7043)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ) : null,
+            borderRadius: BorderRadius.circular(12),
+            border: seleccionado ? null : Border.all(color: Colors.grey.shade300),
+            boxShadow: seleccionado ? [
+              BoxShadow(
+                color: const Color(0xFFF9A15E).withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              )
+            ] : null,
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            children: [
+              if (seleccionado) 
+                const Icon(Icons.check, size: 14, color: Colors.white),
+              if (seleccionado) const SizedBox(width: 6),
+              Text(
+                nombre,
+                style: TextStyle(
+                  color: seleccionado ? Colors.white : textoOscuro,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1177,11 +1116,8 @@ class ProductoCard extends StatelessWidget {
 
   const ProductoCard({
     super.key,
-
     required this.producto,
-
     required this.imagenWidget,
-
     required this.onAgregar,
     required this.onTap,
   });
@@ -1190,204 +1126,150 @@ class ProductoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(15),
-      child: Card(
-        color: cremaClaro,
-
-      elevation: 3,
-
-      margin: EdgeInsets.zero,
-
-      shadowColor:
-      Colors.black.withValues(
-        alpha: 0.10,
-      ),
-
-      shape:
-      RoundedRectangleBorder(
-        borderRadius:
-        BorderRadius.circular(15),
-      ),
-
-      child: Padding(
-        padding:
-        const EdgeInsets.all(10),
-
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
         child: Column(
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
-
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // =================================================
-            // IMAGEN
+            // IMAGEN CON PADDING Y SOMBRA (Estilo Referencia)
             // =================================================
-
             Expanded(
-              flex: 5,
-
-              child: Container(
-                width: double.infinity,
-
-                decoration:
-                BoxDecoration(
-                  color: crema,
-
-                  borderRadius:
-                  BorderRadius.circular(
-                    12,
-                  ),
-                ),
-
-                child: ClipRRect(
-                  borderRadius:
-                  BorderRadius.circular(
-                    12,
-                  ),
-
-                  child: imagenWidget,
-                ),
-              ),
-            ),
-
-            const SizedBox(
-              height: 8,
-            ),
-
-            // =================================================
-            // NOMBRE
-            // =================================================
-
-            Text(
-              producto.nombre.isEmpty
-                  ? 'Sin nombre'
-                  : producto.nombre,
-
-              maxLines: 1,
-
-              overflow:
-              TextOverflow.ellipsis,
-
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight:
-                FontWeight.bold,
-                color: textoOscuro,
-              ),
-            ),
-
-            const SizedBox(
-              height: 4,
-            ),
-
-            // =================================================
-            // DESCRIPCIÓN
-            // =================================================
-
-            if (producto.descripcion !=
-                null &&
-                producto.descripcion!
-                    .isNotEmpty)
-              Text(
-                producto.descripcion!,
-
-                maxLines: 2,
-
-                overflow:
-                TextOverflow.ellipsis,
-
-                style:
-                const TextStyle(
-                  fontSize: 12,
-                  color: textoSuave,
-                ),
-              ),
-
-            const Spacer(),
-
-            // =================================================
-            // PRECIO
-            // =================================================
-
-            Text(
-              '\$${producto.precio.toStringAsFixed(0)}',
-
-              style:
-              const TextStyle(
-                fontSize: 17,
-                fontWeight:
-                FontWeight.bold,
-                color: cafePrincipal,
-              ),
-            ),
-
-            const SizedBox(height: 4),
-
-            // STOCK
-            Text(
-              producto.stock > 0 ? 'Stock: ${producto.stock}' : 'Agotado',
-              style: TextStyle(
-                fontSize: 11,
-                color: producto.stock > 0 ? Colors.green : Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(
-              height: 4,
-            ),
-
-            // =================================================
-            // BOTÓN AGREGAR
-            // =================================================
-
-            SizedBox(
-              width: double.infinity,
-
-              child: ElevatedButton(
-                onPressed: producto.stock > 0 ? onAgregar : null, // ✅ Desactivar si no hay stock
-
-                style:
-                ElevatedButton.styleFrom(
-                  backgroundColor:
-                  cafePrincipal,
-
-                  foregroundColor:
-                  Colors.white,
-                  
-                  // Color cuando está desactivado (Agotado)
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  disabledForegroundColor: Colors.grey.shade600,
-
-                  padding:
-                  const EdgeInsets
-                      .symmetric(
-                    vertical: 10,
-                  ),
-
-                  shape:
-                  RoundedRectangleBorder(
-                    borderRadius:
-                    BorderRadius.circular(
-                      10,
+              flex: 10,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Center(
+                  child: Hero(
+                    tag: 'prod_${producto.id}',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: imagenWidget,
                     ),
                   ),
                 ),
+              ),
+            ),
 
-                child: Text(
-                  producto.stock > 0 ? 'AGREGAR' : 'AGOTADO', // ✅ Texto dinámico
-
-                  style: const TextStyle(
-                    fontWeight:
-                    FontWeight.bold,
-
-                    fontSize: 12,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // NOMBRE
+                  Text(
+                    producto.nombre.isEmpty ? 'Sin nombre' : producto.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A1A),
+                    ),
                   ),
-                ),
+
+                  const SizedBox(height: 4),
+
+                  // CATEGORÍA (Elegante)
+                  Text(
+                    producto.categoria.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: cafePrincipal.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // PRECIO
+                  Text(
+                    '\$${producto.precio.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF2D2D2D),
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  // STOCK e INDICADOR
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: producto.stock > 0 ? Colors.green : Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        producto.stock > 0 ? '${producto.stock} disp.' : 'Agotado',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: producto.stock > 0 ? Colors.green.shade700 : Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // BOTÓN AGREGAR CON GRADIENTE (Referencia)
+                  InkWell(
+                    onTap: producto.stock > 0 ? onAgregar : null,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: producto.stock > 0 ? const LinearGradient(
+                          colors: [Color(0xFFF9A15E), Color(0xFFFF7043)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ) : null,
+                        color: producto.stock > 0 ? null : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: producto.stock > 0 ? [
+                          BoxShadow(
+                            color: const Color(0xFFF9A15E).withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ] : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        producto.stock > 0 ? 'AGREGAR' : 'SIN STOCK',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-      ),
       ),
     );
   }

@@ -50,8 +50,21 @@ class MyApp extends StatelessWidget {
       title: 'Buitrón Coffee',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.brown,
-        scaffoldBackgroundColor: const Color(0xFFF5EFE6),
+        useMaterial3: true,
+        primaryColor: const Color(0xFFF9A15E), 
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFF9A15E),
+          primary: const Color(0xFFF9A15E),
+          secondary: const Color(0xFFFF7043),
+          surface: const Color(0xFFFFFBF2),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFFFFBF2),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFF9A15E),
+            foregroundColor: Colors.white,
+          ),
+        ),
       ),
       home: const RouteGuard(),
     );
@@ -63,7 +76,7 @@ class RouteGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🛡️ Widget que decide qué pantalla mostrar según el token y el rol
+    // 🛡 Widget que decide qué pantalla mostrar según el token y el rol
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
@@ -79,7 +92,7 @@ class RouteGuard extends StatelessWidget {
           future: AuthService.obtenerPerfilActual(),
           builder: (context, profileSnapshot) {
             if (profileSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF4E342E))));
+              return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFFF9A15E))));
             }
 
             final perfil = profileSnapshot.data;

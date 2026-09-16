@@ -1,5 +1,3 @@
-- `[ ]` Modificar `producto_service.dart` para confirmar actualizaciones con `.select().single()`
-- `[ ]` Optimizar `cargarProductos` en `producto_admin_provider.dart` (limpieza previa)
-- `[ ]` Elevar botones en `detalle_producto_screen.dart` a 120px
-- `[ ]` Reforzar notificaciones de éxito en `actualizar_producto_screen.dart`
-- `[ ]` Verificar con `flutter analyze`
+- `[ ]` Corregir `actualizarProducto` en `producto_service.dart` (robusto y sin `.single()`)
+- `[ ]` Oscurecer SnackBar en `catalogo_screen.dart` para mejor legibilidad
+- `[ ]` Verificar estabilidad con `flutter analyze`

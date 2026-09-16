@@ -3,29 +3,31 @@ import 'api_service.dart';
 
 class ProductoService {
   static final _supabase = ApiService.supabase;
-  static const String _tabla = ApiService.tablaProductos;
+  static const String _tabla = 'producto'; // ✅ Nombre EXACTO de tu tabla
 
   // ============================================================
-  // OBTENER PRODUCTOS ACTIVOS (Para clientes)
+  // OBTENER PRODUCTOS ACTIVOS
   // ============================================================
   static Future<List<Producto>> obtenerActivos() async {
     try {
       final datos = await _supabase
           .from(_tabla)
           .select()
-          .eq('estado', true) // ✅ Solo los que el admin activó
+          .eq('estado', true)
           .order('id', ascending: true);
 
-      return (datos as List)
-          .map((json) => Producto.fromJson(Map<String, dynamic>.from(json)))
-          .toList();
+      return datos.map((json) {
+        print("📋 Cargado: $json"); // Verifica qué llega
+        return Producto.fromJson(json);
+      }).toList();
     } catch (e) {
+      print("❌ Error obtenerActivos: $e");
       rethrow;
     }
   }
 
   // ============================================================
-  // OBTENER TODOS LOS PRODUCTOS (Para Admin)
+  // OBTENER TODOS LOS PRODUCTOS
   // ============================================================
   static Future<List<Producto>> obtenerTodos() async {
     try {
@@ -34,16 +36,18 @@ class ProductoService {
           .select()
           .order('id', ascending: true);
 
-      return (datos as List)
-          .map((json) => Producto.fromJson(Map<String, dynamic>.from(json)))
-          .toList();
+      return datos.map((json) {
+        print("📋 Cargado: $json"); // Verifica qué llega
+        return Producto.fromJson(json);
+      }).toList();
     } catch (e) {
+      print("❌ Error obtenerTodos: $e");
       rethrow;
     }
   }
 
   // ============================================================
-  // OBTENER PRODUCTO POR ID
+  // OBTENER POR ID
   // ============================================================
   static Future<Producto> obtenerPorId(int id) async {
     try {
@@ -53,20 +57,19 @@ class ProductoService {
           .eq('id', id)
           .single();
 
-      return Producto.fromJson(Map<String, dynamic>.from(datos));
+      return Producto.fromJson(datos);
     } catch (e) {
+      print("❌ Error obtenerPorId($id): $e");
       rethrow;
     }
   }
 
   // ============================================================
-  // CREAR PRODUCTO (Admin)
+  // CREAR PRODUCTO
   // ============================================================
   static Future<void> crearProducto(Producto producto) async {
     try {
-      // Creamos un mapa limpio sin la llave 'id' para forzar a Supabase
-      // a usar su generador automático de llaves primarias (Identity/Serial).
-      final Map<String, dynamic> datosParaInsertar = {
+      final Map<String, dynamic> datos = {
         'nombre_producto': producto.nombre,
         'descripcion': producto.descripcion,
         'precio': producto.precio,
@@ -75,9 +78,11 @@ class ProductoService {
         'estado': producto.estado,
         'stock': producto.stock,
       };
-      
-      await _supabase.from(_tabla).insert(datosParaInsertar);
+
+      await _supabase.from(_tabla).insert(datos);
+      print("✅ Creado: ${producto.nombre}");
     } catch (e) {
+      print("❌ Error crear: $e");
       rethrow;
     }
   }
@@ -87,29 +92,47 @@ class ProductoService {
   // ============================================================
   static Future<void> actualizarProducto(Producto producto) async {
     try {
-      final Map<String, dynamic> datos = producto.toJson();
-      final int id = producto.id;
-      // No enviamos el ID en el cuerpo de la actualización
-      datos.remove('id'); 
+      final int idLimpio = producto.id;
+      
+      if (idLimpio <= 0) {
+        throw Exception("ID de producto inválido para actualizar: $idLimpio");
+      }
 
+      final Map<String, dynamic> datos = {
+        'nombre_producto': producto.nombre,
+        'descripcion': producto.descripcion,
+        'precio': producto.precio,
+        'imagen': producto.imagen,
+        'categoria': producto.categoria,
+        'estado': producto.estado,
+        'stock': producto.stock,
+      };
+
+      print("🚀 Intentando actualizar ID: $idLimpio en tabla: $_tabla");
+
+      // Realizamos el update. No usamos .select().single() para evitar el error PGRST116
+      // si por alguna razón de políticas de seguridad no devuelve la fila.
       await _supabase
           .from(_tabla)
           .update(datos)
-          .eq('id', id)
-          .select() // ✅ Forzamos el retorno de datos para confirmar éxito
-          .single();
+          .eq('id', idLimpio);
+          
+      print("✅ Petición de actualización enviada correctamente.");
     } catch (e) {
+      print("❌ Error crítico en actualizarProducto: $e");
       rethrow;
     }
   }
 
   // ============================================================
-  // ELIMINAR PRODUCTO (Admin)
+  // ELIMINAR PRODUCTO
   // ============================================================
   static Future<void> eliminarProducto(int id) async {
     try {
       await _supabase.from(_tabla).delete().eq('id', id);
+      print("✅ Eliminado: producto $id");
     } catch (e) {
+      print("❌ Error eliminar($id): $e");
       rethrow;
     }
   }
@@ -125,10 +148,9 @@ class ProductoService {
           .ilike('nombre_producto', '%$texto%')
           .order('id', ascending: true);
 
-      return (datos as List)
-          .map((json) => Producto.fromJson(Map<String, dynamic>.from(json)))
-          .toList();
+      return datos.map((json) => Producto.fromJson(json)).toList();
     } catch (e) {
+      print("❌ Error buscar: $e");
       rethrow;
     }
   }

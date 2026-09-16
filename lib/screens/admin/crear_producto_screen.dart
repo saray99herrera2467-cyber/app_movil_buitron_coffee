@@ -23,14 +23,11 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
   bool _estado = true;
   bool _guardando = false;
 
-  // ==========================================================
-  // COLORES BUITRÓN COFFEE
-  // ==========================================================
-  static const Color cafePrincipal = Color(0xFF4E342E);
-  static const Color cafeClaro = Color(0xFF795548);
-  static const Color crema = Color(0xFFF5EFE6);
-  static const Color cremaClaro = Color(0xFFFFFCF7);
-  static const Color dorado = Color(0xFFC8A45D);
+  // ✅ PALETA NARANJA CÁLIDO
+  static const Color naranjaPrincipal = Color(0xFFF9A15E);
+  static const Color cafeClaro = Color(0xFFFF7043);
+  static const Color cremaFondo = Color(0xFFFFFBF2);
+  static const Color dorado = Color(0xFFFFAB40);
 
   @override
   void dispose() {
@@ -50,7 +47,7 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
 
     try {
       final nuevoProducto = Producto(
-        id: 0, // Se ignora en el servicio para usar el autoincremental
+        id: 0, 
         nombre: _nombreCtrl.text.trim(),
         descripcion: _descripcionCtrl.text.trim().isEmpty ? null : _descripcionCtrl.text.trim(),
         precio: double.parse(_precioCtrl.text.trim()),
@@ -88,10 +85,10 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: crema,
+      backgroundColor: cremaFondo,
       appBar: AppBar(
         title: const Text('CREAR PRODUCTO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1)),
-        backgroundColor: cafePrincipal,
+        backgroundColor: naranjaPrincipal,
         foregroundColor: Colors.white,
         centerTitle: true,
       ),
@@ -141,26 +138,29 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
 
               const SizedBox(height: 16),
               SwitchListTile(
-                title: const Text('Producto activo', style: TextStyle(fontWeight: FontWeight.bold, color: cafePrincipal)),
+                title: const Text('Producto activo', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D))),
                 value: _estado,
                 activeColor: dorado,
                 onChanged: (value) => setState(() => _estado = value),
               ),
               
               const SizedBox(height: 30),
-              SizedBox(
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _guardando ? null : _guardarProducto,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: cafePrincipal,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 3,
+              InkWell(
+                onTap: _guardando ? null : _guardarProducto,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  height: 55,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [naranjaPrincipal, cafeClaro]),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(color: naranjaPrincipal.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))
+                    ],
                   ),
+                  alignment: Alignment.center,
                   child: _guardando
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('GUARDAR PRODUCTO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
+                      ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                      : const Text('GUARDAR PRODUCTO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
                 ),
               ),
             ],
@@ -187,11 +187,11 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
         labelText: label,
         hintText: hint,
         prefixText: prefix,
-        prefixIcon: Icon(icono, color: dorado),
+        prefixIcon: Icon(icono, color: naranjaPrincipal),
         filled: true,
-        fillColor: cremaClaro,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: dorado, width: 2)),
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: cafeClaro, width: 2)),
       ),
       validator: (value) => (value == null || value.trim().isEmpty && label != 'Descripción (opcional)')
           ? 'Este campo es obligatorio'
@@ -220,11 +220,11 @@ class _CrearProductoScreenState extends State<CrearProductoScreen> {
   Widget _imagenError() {
     return Container(
       height: 150,
-      color: cremaClaro,
+      color: Colors.grey.shade200,
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.broken_image, color: cafeClaro, size: 40),
+          Icon(Icons.broken_image, color: Colors.grey, size: 40),
           Text('Vista previa no disponible', style: TextStyle(fontSize: 12)),
         ],
       ),

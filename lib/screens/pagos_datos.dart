@@ -3,10 +3,10 @@ import 'package:flutter/services.dart'; // ✅ Agregado para formateadores
 import '../services/auth_service.dart';
 import '../services/perfil_service.dart'; // ✅ Usar servicio centralizado
 import 'pagos_screen.dart';
-const Color cafePrincipal = Color(0xFF4E342E);
-const Color crema = Color(0xFFF5EFE6);
-const Color cremaClaro = Color(0xFFFFFCF7);
-const Color dorado = Color(0xFFC8A45D);
+
+const Color cafePrincipal = Color(0xFFF9A15E);
+const Color cremaFondo = Color(0xFFFFFBF2);
+const Color naranjaAcento = Color(0xFFFF7043);
 
 class PagoDatosScreen extends StatefulWidget {
   final double total;
@@ -53,7 +53,7 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
         }
       } catch (_) {}
     }
-    setState(() => _cargando = false);
+    if (mounted) setState(() => _cargando = false);
   }
 
   void _continuar() {
@@ -94,7 +94,7 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: crema,
+      backgroundColor: cremaFondo,
       appBar: AppBar(
         backgroundColor: cafePrincipal,
         centerTitle: true,
@@ -108,7 +108,7 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Ingresa tu correo electrónico', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cafePrincipal)),
+            const Text('Ingresa tu correo electrónico', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D))),
             const SizedBox(height: 6),
             const Text('Utilizaremos tus datos para procesar el envío de tu pedido.', style: TextStyle(fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 20),
@@ -121,14 +121,13 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
             ),
             const SizedBox(height: 24),
 
-            const Text('Tus datos personales', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cafePrincipal)),
+            const Text('Tus datos personales', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D))),
             const SizedBox(height: 16),
             _campoTexto(
               controller: _nombreController,
               label: 'Nombre completo',
               icono: Icons.person_outline,
               formatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ ]'))],
-              habilitado: false,
             ),
             const SizedBox(height: 16),
             _campoTexto(
@@ -138,11 +137,10 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
               tipo: TextInputType.phone,
               formatters: [FilteringTextInputFormatter.digitsOnly],
               maxL: 10,
-              habilitado: false,
             ),
             const SizedBox(height: 24),
 
-            const Text('Lugar de entrega', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cafePrincipal)),
+            const Text('Lugar de entrega', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D))),
             const SizedBox(height: 16),
             _campoTexto(
               controller: _direccionController,
@@ -155,15 +153,20 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
             SizedBox(
               width: double.infinity,
               height: 50,
-              child: ElevatedButton(
-                onPressed: _continuar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cafePrincipal,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 2,
+              child: InkWell(
+                onTap: _continuar,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [cafePrincipal, naranjaAcento]),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(color: cafePrincipal.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text('CONTINUAR AL PAGO', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ),
-                child: const Text('CONTINUAR AL PAGO', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1)),
               ),
             ),
           ],
@@ -179,8 +182,8 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
     bool habilitado = true,
     int maxLines = 1,
     TextInputType tipo = TextInputType.text,
-    List<TextInputFormatter>? formatters, // 👈 Nuevo parámetro
-    int? maxL, // 👈 Nuevo parámetro
+    List<TextInputFormatter>? formatters, 
+    int? maxL, 
   }) {
     return TextField(
       controller: controller,
@@ -194,9 +197,9 @@ class _PagoDatosScreenState extends State<PagoDatosScreen> {
         counterText: '',
         prefixIcon: Icon(icono, color: cafePrincipal),
         filled: true,
-        fillColor: habilitado ? cremaClaro : const Color(0xFFE9E3DC),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: dorado, width: 2)),
+        fillColor: habilitado ? Colors.white : const Color(0xFFE9E3DC),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: naranjaAcento, width: 2)),
       ),
     );
   }

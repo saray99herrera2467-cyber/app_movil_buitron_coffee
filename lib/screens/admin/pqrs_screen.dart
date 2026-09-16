@@ -9,12 +9,13 @@ class AdminPqrsScreen extends StatefulWidget {
 }
 
 class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
-  static const Color cafePrincipal = Color(0xFF4E342E);
-  static const Color cafeClaro = Color(0xFF795548);
-  static const Color crema = Color(0xFFF5EFE6);
-  static const Color cremaClaro = Color(0xFFFFFCF7);
-  static const Color dorado = Color(0xFFC8A45D);
-  static const Color textoSuave = Color(0xFF756860);
+  // ✅ PALETA NARANJA CÁLIDO
+  static const Color cafePrincipal = Color(0xFFF9A15E);
+  static const Color cafeClaro = Color(0xFFFF7043);
+  static const Color crema = Color(0xFFFFFBF2);
+  static const Color cremaClaro = Color(0xFFFFFFFF);
+  static const Color dorado = Color(0xFFFFAB40);
+  static const Color textoSuave = Color(0xFF7D6E66);
 
   String filtroEstado = 'todos';
   String busqueda = '';
@@ -129,7 +130,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                     const SizedBox(height: 4),
                     Text(pqrsItem['email'] ?? '', style: const TextStyle(fontSize: 13, color: textoSuave)),
                     const SizedBox(height: 10),
-                    Text('Tipo: ${(pqrsItem['tipo'] ?? '').toString().toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold, color: dorado, fontSize: 12)),
+                    Text('Tipo: ${(pqrsItem['tipo'] ?? '').toString().toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF7043), fontSize: 12)),
                     const SizedBox(height: 15),
                     const Text('Descripción:', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(pqrsItem['descripcion'] ?? ''),
@@ -175,7 +176,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                     respuestaCtrl.dispose();
                     Navigator.pop(context);
                   }, 
-                  child: const Text('Cerrar', style: TextStyle(color: cafeClaro))
+                  child: const Text('Cerrar', style: TextStyle(color: cafePrincipal))
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: cafePrincipal, foregroundColor: Colors.white),
@@ -230,7 +231,7 @@ class _AdminPqrsScreenState extends State<AdminPqrsScreen> {
                       filled: true,
                       fillColor: cremaClaro,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: dorado, width: 2)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF7043), width: 2)),
                     ),
                     onChanged: (valor) => setState(() => busqueda = valor),
                   ),

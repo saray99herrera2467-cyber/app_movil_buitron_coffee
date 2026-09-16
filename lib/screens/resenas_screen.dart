@@ -25,12 +25,12 @@ class _ResenasScreenState extends State<ResenasScreen> {
   bool _enviando = false;
 
   // ==========================================================
-  // COLORES
+  // COLORES (NARANJA CÁLIDO)
   // ==========================================================
 
-  static const Color colorPrimario = Color(0xFF4E342E);
-  static const Color colorFondo = Color(0xFFF5EFE6);
-  static const Color colorDorado = Color(0xFFC8A45D);
+  static const Color colorPrimario = Color(0xFFF9A15E);
+  static const Color colorFondo = Color(0xFFFFFBF2);
+  static const Color colorDorado = Color(0xFFFFAB40);
 
   // ==========================================================
   // REGRESAR AL CATÁLOGO
