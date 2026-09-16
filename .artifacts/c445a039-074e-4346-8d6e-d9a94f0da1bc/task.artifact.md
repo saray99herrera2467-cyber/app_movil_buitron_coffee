@@ -1,6 +1,5 @@
-- `[x]` Actualizar `AuthService.logout` para invalidar el token en Supabase
-- `[x]` Implementar `AuthService.obtenerPerfilActual` para consultar el rol desde el token
-- `[x]` Crear widget de protección de rutas (`RouteGuard`) en `main.dart`
-- `[x]` Asegurar que el Login guarde la sesión correctamente
-- `[x]` Probar el flujo de persistencia y restricción de roles
-- `[x]` Verificar con `flutter analyze`
+- `[ ]` Modificar `producto_service.dart` para confirmar actualizaciones con `.select().single()`
+- `[ ]` Optimizar `cargarProductos` en `producto_admin_provider.dart` (limpieza previa)
+- `[ ]` Elevar botones en `detalle_producto_screen.dart` a 120px
+- `[ ]` Reforzar notificaciones de éxito en `actualizar_producto_screen.dart`
+- `[ ]` Verificar con `flutter analyze`

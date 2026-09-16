@@ -92,7 +92,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     });
 
     try {
-      final productos = await ProductoService.obtenerTodos();
+      final productos = await ProductoService.obtenerActivos(); // ✅ Cambiado para traer solo activos
 
       if (!mounted) return;
 
@@ -258,7 +258,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       errorBuilder:
           (context, error, stackTrace) {
         debugPrint(
-          '❌ No se encontró la imagen: $ruta',
+          ' No se encontró la imagen: $ruta',
         );
 
         return _imagenLocalFallback(producto);
@@ -457,7 +457,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Logo mejorado
+                //  Logo mejorado
                 Container(
                   width: 80,
                   height: 80,
@@ -707,7 +707,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   ),
 
                   onTap: () async {
-                    // ✅ Al cerrar sesión solo limpiamos la memoria local del carrito
+                    //  Al cerrar sesión solo limpiamos la memoria local del carrito
                     // No vaciamos la base de datos
                     context.read<CarritoProvider>().limpiarCarritoLocal();
                     
@@ -1344,7 +1344,7 @@ class ProductoCard extends StatelessWidget {
               width: double.infinity,
 
               child: ElevatedButton(
-                onPressed: onAgregar,
+                onPressed: producto.stock > 0 ? onAgregar : null, // ✅ Desactivar si no hay stock
 
                 style:
                 ElevatedButton.styleFrom(
@@ -1353,6 +1353,10 @@ class ProductoCard extends StatelessWidget {
 
                   foregroundColor:
                   Colors.white,
+                  
+                  // Color cuando está desactivado (Agotado)
+                  disabledBackgroundColor: Colors.grey.shade300,
+                  disabledForegroundColor: Colors.grey.shade600,
 
                   padding:
                   const EdgeInsets
@@ -1369,10 +1373,10 @@ class ProductoCard extends StatelessWidget {
                   ),
                 ),
 
-                child: const Text(
-                  'AGREGAR',
+                child: Text(
+                  producto.stock > 0 ? 'AGREGAR' : 'AGOTADO', // ✅ Texto dinámico
 
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight:
                     FontWeight.bold,
 

@@ -1,48 +1,44 @@
-# Plan: Implementación de Subida de Imágenes Reales (Supabase Storage)
+# Plan: Sincronización de Base de Datos y Refresco de Interfaz
 
-Este plan permite que el administrador seleccione fotos directamente desde su galería o cámara y las suba a la nube de Supabase, vinculándolas automáticamente a los productos.
+Este plan aborda el error de duplicidad de ID (requiere acción del usuario en Supabase) y optimiza el sistema de refresco de datos para asegurar que las actualizaciones de productos sean visibles de inmediato.
 
-## User Review Required
+## User Action Required
 
-> [!IMPORTANT]
-> - **Bucket en Supabase**: Para que esto funcione, debes entrar a tu panel de Supabase -> **Storage** y crear un **Bucket** llamado `productos`. Asegúrate de ponerlo como **Público**.
-> - **Dependencia**: Se agregará la librería `image_picker` para permitir el acceso a la cámara y galería.
+> [!CAUTION]
+> **IMPORTANTE: Sincronizar Contador de ID**
+> Para solucionar el error `duplicate key`, debes ejecutar este comando en el **SQL Editor** de tu panel de Supabase:
+> ```sql
+> SELECT setval('producto_id_seq', (SELECT MAX(id) FROM producto));
+> ```
+> Esto arreglará el contador de la tabla `producto` que está causando el conflicto.
 
 ## Proposed Changes
 
-### [Configuración]
-
-#### [MODIFY] [pubspec.yaml](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/pubspec.yaml)
-- Añadir la dependencia `image_picker: ^1.1.2`.
-
-#### [MODIFY] [api_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/api_service.dart)
-- Añadir la constante `static const String bucketProductos = 'productos';`.
-
----
-
 ### [Servicios]
 
-#### [NEW] [storage_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/storage_service.dart)
-- Implementar métodos para:
-    - Seleccionar imagen desde galería/cámara.
-    - Subir archivo al bucket `productos`.
-    - Obtener la URL pública del archivo subido.
+#### [MODIFY] [producto_service.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/services/producto_service.dart)
+- Modificar `actualizarProducto` para usar el método `.select().single()` al final. Esto obliga a Supabase a devolver el registro actualizado y confirma que la operación se realizó con éxito sobre el ID correcto.
 
 ---
 
-### [Pantallas de Administrador]
+### [Providers]
 
-#### [MODIFY] [crear_producto_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/admin/crear_producto_screen.dart)
-- Añadir un botón visual para "Seleccionar Imagen".
-- Mostrar una vista previa de la foto elegida.
-- Modificar el guardado para que primero suba la imagen a Storage y luego guarde el producto con esa URL.
+#### [MODIFY] [producto_admin_provider.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/providers/producto_admin_provider.dart)
+- Asegurar que `cargarProductos` limpie la lista anterior antes de recibir la nueva, forzando un redibujado total de la interfaz.
+
+---
+
+### [Screens]
+
+#### [MODIFY] [detalle_producto_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/detalle_producto_screen.dart)
+- Incrementar el padding inferior del `bottomSheet` a **120px** para elevar los botones a una posición óptima.
 
 #### [MODIFY] [actualizar_producto_screen.dart](file:///C:/Users/leonc/AndroidStudioProjects/app_movil_buitron_coffee/lib/screens/admin/actualizar_producto_screen.dart)
-- Implementar la misma lógica para permitir cambiar la imagen de un producto existente.
+- Añadir un indicador de éxito (SnackBar verde) más persistente para confirmar visualmente al administrador que el cambio se guardó en la nube.
 
 ## Verification Plan
 
 ### Manual Verification
-1. **Selección**: Abrir la pantalla de Crear Producto, tocar el botón de imagen y elegir una foto de la galería.
-2. **Subida**: Guardar el producto y verificar en el panel de Supabase -> Storage -> productos que la imagen esté ahí.
-3. **Visualización**: Confirmar que el nuevo producto aparece en el catálogo con la foto real.
+1. **Creación**: Tras ejecutar el SQL en Supabase, intentar crear un producto. El ID debe asignarse automáticamente.
+2. **Actualización**: Cambiar un precio, guardar y verificar que la lista principal cambie al instante sin necesidad de salir y volver a entrar.
+3. **Interfaz**: Confirmar que el botón "AGREGAR" en el detalle está a una altura cómoda.

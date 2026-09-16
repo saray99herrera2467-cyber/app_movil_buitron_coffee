@@ -6,7 +6,26 @@ class ProductoService {
   static const String _tabla = ApiService.tablaProductos;
 
   // ============================================================
-  // OBTENER TODOS LOS PRODUCTOS
+  // OBTENER PRODUCTOS ACTIVOS (Para clientes)
+  // ============================================================
+  static Future<List<Producto>> obtenerActivos() async {
+    try {
+      final datos = await _supabase
+          .from(_tabla)
+          .select()
+          .eq('estado', true) // ✅ Solo los que el admin activó
+          .order('id', ascending: true);
+
+      return (datos as List)
+          .map((json) => Producto.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ============================================================
+  // OBTENER TODOS LOS PRODUCTOS (Para Admin)
   // ============================================================
   static Future<List<Producto>> obtenerTodos() async {
     try {
@@ -45,7 +64,7 @@ class ProductoService {
   // ============================================================
   static Future<void> crearProducto(Producto producto) async {
     try {
-      // ✅ Creamos un mapa limpio sin la llave 'id' para forzar a Supabase
+      // Creamos un mapa limpio sin la llave 'id' para forzar a Supabase
       // a usar su generador automático de llaves primarias (Identity/Serial).
       final Map<String, dynamic> datosParaInsertar = {
         'nombre_producto': producto.nombre,
@@ -76,7 +95,9 @@ class ProductoService {
       await _supabase
           .from(_tabla)
           .update(datos)
-          .eq('id', id);
+          .eq('id', id)
+          .select() // ✅ Forzamos el retorno de datos para confirmar éxito
+          .single();
     } catch (e) {
       rethrow;
     }

@@ -1,29 +1,21 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/producto.dart';
+import '../services/producto_service.dart';
 
 class ProductoAdminProvider extends ChangeNotifier {
-  final SupabaseClient _supabase = Supabase.instance.client;
-
-  // ⚠️ Verifica que este sea el nombre exacto de tu tabla en Supabase
-  static const String _tabla = 'productos';
-
   List<Producto> productos = [];
   bool cargando = false;
   String? error;
 
-  // ✅ OBTENER TODOS LOS PRODUCTOS
+  // ✅ OBTENER TODOS LOS PRODUCTOS USANDO EL SERVICIO
   Future<void> cargarProductos() async {
     cargando = true;
     error = null;
+    productos = []; // ✅ Limpiamos la lista para forzar el refresco visual
     notifyListeners();
 
     try {
-      final data =
-      await _supabase.from(_tabla).select().order('id', ascending: true);
-
-      productos =
-          (data as List).map((json) => Producto.fromJson(json)).toList();
+      productos = await ProductoService.obtenerTodos();
     } catch (e) {
       error = 'Error al cargar productos: $e';
     } finally {
@@ -32,10 +24,10 @@ class ProductoAdminProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ CREAR PRODUCTO
+  // ✅ CREAR PRODUCTO USANDO EL SERVICIO (Maneja el ID automático)
   Future<bool> crearProducto(Producto producto) async {
     try {
-      await _supabase.from(_tabla).insert(producto.toJson());
+      await ProductoService.crearProducto(producto);
       await cargarProductos();
       return true;
     } catch (e) {
@@ -45,13 +37,10 @@ class ProductoAdminProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ ACTUALIZAR PRODUCTO
+  // ✅ ACTUALIZAR PRODUCTO USANDO EL SERVICIO
   Future<bool> actualizarProducto(Producto producto) async {
     try {
-      await _supabase
-          .from(_tabla)
-          .update(producto.toJson())
-          .eq('id', producto.id);
+      await ProductoService.actualizarProducto(producto);
       await cargarProductos();
       return true;
     } catch (e) {
@@ -61,10 +50,10 @@ class ProductoAdminProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ ELIMINAR PRODUCTO
+  // ✅ ELIMINAR PRODUCTO USANDO EL SERVICIO
   Future<bool> eliminarProducto(int id) async {
     try {
-      await _supabase.from(_tabla).delete().eq('id', id);
+      await ProductoService.eliminarProducto(id);
       productos.removeWhere((p) => p.id == id);
       notifyListeners();
       return true;
@@ -75,9 +64,28 @@ class ProductoAdminProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ ACTIVAR / DESACTIVAR RÁPIDO (sin eliminar)
+  // ✅ CAMBIO RÁPIDO DE ESTADO (Actualización optimista para mayor fluidez)
   Future<bool> cambiarEstado(Producto producto) async {
-    final actualizado = producto.copyWith(estado: !producto.estado);
-    return await actualizarProducto(actualizado);
+    final int index = productos.indexWhere((p) => p.id == producto.id);
+    if (index == -1) return false;
+
+    // Guardamos el estado original por si falla
+    final productoOriginal = productos[index];
+    final nuevoEstado = !productoOriginal.estado;
+
+    // Actualizamos localmente de inmediato
+    productos[index] = productoOriginal.copyWith(estado: nuevoEstado);
+    notifyListeners();
+
+    try {
+      await ProductoService.actualizarProducto(productos[index]);
+      return true;
+    } catch (e) {
+      // Si falla, revertimos al estado original
+      productos[index] = productoOriginal;
+      error = 'Error al cambiar estado: $e';
+      notifyListeners();
+      return false;
+    }
   }
 }

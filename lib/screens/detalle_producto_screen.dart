@@ -158,7 +158,7 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
         ],
       ),
       bottomSheet: Container(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 85), // ✅ Elevamos los botones sustancialmente (85px)
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120), // ✅ Elevamos aún más los botones (120px)
         decoration: const BoxDecoration(
           color: Colors.white,
           boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
