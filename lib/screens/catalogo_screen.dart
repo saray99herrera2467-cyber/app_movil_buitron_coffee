@@ -229,7 +229,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         errorBuilder:
             (context, error, stackTrace) {
           debugPrint(
-            '❌ Error cargando URL: $nombreImagen',
+            ' Error cargando URL: $nombreImagen',
           );
 
           return _imagenLocalFallback(producto);
@@ -246,7 +246,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         : 'assets/$nombreImagen';
 
     debugPrint(
-      '🖼️ Cargando imagen local: $ruta',
+      ' Cargando imagen local: $ruta',
     );
 
     return Image.asset(
@@ -298,7 +298,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     // ----------------------------------------------------------
 
     else if (nombre.contains('molido')) {
-      path = 'assets/cafe1.png';
+      path = 'assets/cafe4.png';
     }
 
     // ----------------------------------------------------------
@@ -365,7 +365,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
-          backgroundColor: const Color(0xFF1A1A1A), // ✅ Fondo oscuro
+          backgroundColor: const Color(0xFF1A1A1A), //  Fondo oscuro
           content: Text(
             error,
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -380,7 +380,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
     messenger.showSnackBar(
       SnackBar(
-        backgroundColor: const Color(0xFF1A1A1A), // ✅ Fondo oscuro premium
+        backgroundColor: const Color(0xFF1A1A1A), //  Fondo oscuro premium
 
         content: Text(
           '${producto.nombre} agregado al carrito',
@@ -391,12 +391,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ),
 
         duration: const Duration(
-          seconds: 4, // ✅ Más tiempo para leer
+          seconds: 4, // Más tiempo para leer
         ),
 
         action: SnackBarAction(
           label: 'VER',
-          textColor: cafePrincipal, // ✅ Resaltado con el color principal
+          textColor: cafePrincipal, // Resaltado con el color principal
 
           onPressed: () {
             Navigator.push(

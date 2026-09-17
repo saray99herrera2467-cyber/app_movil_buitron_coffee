@@ -360,7 +360,7 @@ class AuthService {
           );
           return respuesta;
         } else {
-          // ✅ AUTO-APROVISIONAMIENTO (Para usuarios Web)
+          // AUTO-APROVISIONAMIENTO (Para usuarios Web)
           final userMetadata = authRes.user!.userMetadata ?? {};
           
           final nuevoPerfil = await _supabase
@@ -488,7 +488,7 @@ class AuthService {
         return respuesta;
       }
 
-      // ✅ AUTO-APROVISIONAMIENTO (Para usuarios Web con sesión activa)
+      // AUTO-APROVISIONAMIENTO (Para usuarios Web con sesión activa)
       final userMetadata = user.userMetadata ?? {};
       final correoNormalizado = user.email!.toLowerCase();
 

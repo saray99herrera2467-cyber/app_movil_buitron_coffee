@@ -23,7 +23,7 @@ Future<void> main() async {
 
   );
 
-  // ✅ PASAR CONEXIÓN A API SERVICE — ¡ESENCIAL!
+  //  PASAR CONEXIÓN A API SERVICE — ¡ESENCIAL!
   ApiService.inicializarCliente(Supabase.instance.client);
 
   runApp(
@@ -76,7 +76,9 @@ class RouteGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🛡 Widget que decide qué pantalla mostrar según el token y el rol
+    // 🛡
+    //
+    // Widget que decide qué pantalla mostrar según el token y el rol
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {

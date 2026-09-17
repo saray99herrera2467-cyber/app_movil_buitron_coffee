@@ -234,3 +234,4 @@ class _RegistroPageState extends State<RegistroPage> {
     super.dispose();
   }
 }
+
