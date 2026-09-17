@@ -6,12 +6,12 @@ import 'auth_service.dart';
 class CarritoService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
-  // 📌 Obtener ID del usuario actual desde SharedPreferences y base de datos de manera robusta
+  // Obtener ID del usuario actual desde SharedPreferences y base de datos de manera robusta
   static Future<int?> _obtenerIdUsuarioActual() async {
     return await AuthService.obtenerIdSesion();
   }
 
-  // 🛒 OBTENER CARRITO
+  // OBTENER CARRITO
   static Future<List<dynamic>> obtenerCarrito() async {
     final idUsuario = await _obtenerIdUsuarioActual();
     if (idUsuario == null) return [];
@@ -29,7 +29,7 @@ class CarritoService {
     }
   }
 
-  // ➕ AGREGAR AL CARRITO
+  //  AGREGAR AL CARRITO
   static Future<bool> agregarAlCarrito(int idProducto, int cantidad) async {
     final idUsuario = await _obtenerIdUsuarioActual();
     if (idUsuario == null) return false;
@@ -44,14 +44,14 @@ class CarritoService {
           .maybeSingle();
 
       if (existe != null) {
-        // ✅ Sumar cantidad
+        // Sumar cantidad
         int cantidadActual = existe['cantidad'] ?? 0;
         await _supabase
             .from('carrito')
             .update({'cantidad': cantidadActual + cantidad})
             .eq('id', existe['id']);
       } else {
-        // ✅ Insertar nuevo
+        //  Insertar nuevo
         await _supabase.from('carrito').insert({
           'id_usuario': idUsuario,
           'id_producto': idProducto,
@@ -66,7 +66,7 @@ class CarritoService {
     }
   }
 
-  // 🔄 ACTUALIZAR CANTIDAD
+  // ACTUALIZAR CANTIDAD
   static Future<bool> actualizarCantidad(int idCarrito, int nuevaCantidad) async {
     try {
       if (nuevaCantidad <= 0) {
@@ -83,7 +83,7 @@ class CarritoService {
     }
   }
 
-  // 🗑️ ELIMINAR DEL CARRITO
+  //  ELIMINAR DEL CARRITO
   static Future<bool> eliminarDelCarrito(int idCarrito) async {
     try {
       await _supabase.from('carrito').delete().eq('id', idCarrito);
@@ -93,7 +93,7 @@ class CarritoService {
     }
   }
 
-  // 🧹 VACIAR CARRITO
+  //  VACIAR CARRITO
   static Future<bool> vaciarCarrito() async {
     final idUsuario = await _obtenerIdUsuarioActual();
     if (idUsuario == null) return false;
