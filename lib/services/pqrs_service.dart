@@ -12,7 +12,7 @@ class PqrsService {
     try {
       await _supabase.from(_tabla).insert(datos);
     } catch (e) {
-      debugPrint('❌ Error enviando PQRS: $e');
+      debugPrint(' Error enviando PQRS: $e');
       rethrow;
     }
   }
